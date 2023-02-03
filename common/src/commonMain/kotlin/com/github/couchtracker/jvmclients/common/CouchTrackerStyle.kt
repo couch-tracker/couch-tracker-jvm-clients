@@ -10,6 +10,8 @@ object CouchTrackerStyle {
     val animationDuration = 300.milliseconds
     val colors = darkColors()
     val shapes = Shapes(
-        large = RoundedCornerShape(8.dp)
+        small = RoundedCornerShape(4.dp),
+        medium = RoundedCornerShape(8.dp),
+        large = RoundedCornerShape(16.dp),
     )
 }

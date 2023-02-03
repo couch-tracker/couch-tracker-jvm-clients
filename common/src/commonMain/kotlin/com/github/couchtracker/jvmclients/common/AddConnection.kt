@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
+
 
 @Composable
 private fun Element(
@@ -29,7 +31,7 @@ private fun Element(
     padding: PaddingValues = PaddingValues(16.dp),
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(Modifier.width(640.dp).padding(padding), contentAlignment = contentAlignment) {
+    Box(Modifier.fillMaxWidth().padding(padding), contentAlignment = contentAlignment) {
         content()
     }
 }
@@ -45,12 +47,21 @@ private fun BoxElement(
         Surface(
             color = MaterialTheme.colors.primary.copy(alpha = 0.1f),
             border = BorderStroke(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.2f)),
-            shape = MaterialTheme.shapes.large,
+            shape = MaterialTheme.shapes.medium,
         ) {
             Box(Modifier.fillMaxWidth().padding(internalPadding), contentAlignment = contentAlignment) {
                 content()
             }
         }
+    }
+}
+
+@Composable
+private fun shaped(content: @Composable () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        content()
     }
 }
 
@@ -62,34 +73,36 @@ fun AddConnection(
 ) {
     var server: CouchTrackerServer? by remember { mutableStateOf(null) }
 
-    Column(modifier) {
-        TopAppBar(
-            { Text("Add connection") },
-            navigationIcon = {
-                IconButton(close) {
-                    Icon(Icons.Default.ArrowBack, "Back")
+    PopupOrFill(modifier, close) { fill ->
+        Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
+            TopAppBar(
+                { Text("Add connection") },
+                navigationIcon = {
+                    IconButton(close) {
+                        Icon(Icons.Default.ArrowBack, "Back")
+                    }
                 }
-            }
-        )
+            )
 
-        val slideSpec = tween<IntOffset>(CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt())
-        AnimatedContent(
-            targetState = server,
-            transitionSpec = {
-                if (targetState == null) {
-                    slideIntoContainer(AnimatedContentScope.SlideDirection.End, slideSpec) with
-                            slideOutOfContainer(AnimatedContentScope.SlideDirection.End, slideSpec)
-                } else {
-                    slideIntoContainer(AnimatedContentScope.SlideDirection.Start, slideSpec) with
-                            slideOutOfContainer(AnimatedContentScope.SlideDirection.Start, slideSpec)
+            val slideSpec = tween<IntOffset>(CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt())
+            AnimatedContent(
+                targetState = server,
+                transitionSpec = {
+                    if (targetState == null) {
+                        slideIntoContainer(AnimatedContentScope.SlideDirection.End, slideSpec) with
+                                slideOutOfContainer(AnimatedContentScope.SlideDirection.End, slideSpec)
+                    } else {
+                        slideIntoContainer(AnimatedContentScope.SlideDirection.Start, slideSpec) with
+                                slideOutOfContainer(AnimatedContentScope.SlideDirection.Start, slideSpec)
+                    }.using(SizeTransform(clip = false))
                 }
-            }
-        ) { s ->
-            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (s == null) {
-                    ChooseServer { server = it }
-                } else {
-                    Login(s, { server = null }, addConnection)
+            ) { s ->
+                Column(Modifier.padding(vertical = 8.dp),horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (s == null) {
+                        ChooseServer { server = it }
+                    } else {
+                        Login(s, { server = null }, addConnection)
+                    }
                 }
             }
         }
@@ -111,12 +124,14 @@ private fun ChooseServer(
     }
 
     Element {
-        TextField(
-            serverAddress,
-            { serverAddress = it },
-            Modifier.fillMaxWidth(),
-            placeholder = { Text("couch-tracker.myserver.com") }
-        )
+        shaped {
+            TextField(
+                serverAddress,
+                { serverAddress = it },
+                Modifier.fillMaxWidth(),
+                placeholder = { Text("couch-tracker.myserver.com") },
+            )
+        }
     }
     Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
         val remoteLink = "https://github.com/couch-tracker/couch-tracker-server"
@@ -160,9 +175,21 @@ private fun Login(
         )
     }
     Element {
-        Column {
-            TextField(username, { username = it }, Modifier.fillMaxWidth(), placeholder = { Text("Username") })
-            TextField(passwork, { passwork = it }, Modifier.fillMaxWidth(), placeholder = { Text("Password") })
+        shaped {
+            Column {
+                TextField(
+                    username,
+                    { username = it },
+                    Modifier.fillMaxWidth(),
+                    placeholder = { Text("Username") },
+                )
+                TextField(
+                    passwork,
+                    { passwork = it },
+                    Modifier.fillMaxWidth(),
+                    placeholder = { Text("Password") },
+                )
+            }
         }
     }
     Element(contentAlignment = Alignment.Center) {

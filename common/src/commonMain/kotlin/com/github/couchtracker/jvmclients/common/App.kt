@@ -1,22 +1,26 @@
-@file:OptIn(ExperimentalAnimationApi::class)
-
 package com.github.couchtracker.jvmclients.common
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntOffset
 import com.github.couchtracker.jvmclients.common.Location.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.navigation.AppDestination
+import com.github.couchtracker.jvmclients.common.navigation.StackData
+import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 
-sealed class Location(val parent: Location?) {
-    object ConnectionManagement : Location(null)
-    object AddConnection : Location(ConnectionManagement)
+sealed class Location(
+    override val parent: Location?,
+    override val unique: Boolean = true,
+    override val opaque: Boolean = true,
+) : AppDestination<Location> {
 
-    val depth: Int = parent?.depth?.plus(1) ?: 0
+    object Home : Location(null)
+    object ConnectionManagement : Location(Home)
+    object AddConnection : Location(ConnectionManagement, opaque = false)
 }
 
 @Composable
@@ -25,42 +29,33 @@ fun App() {
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
     ) {
-        Surface(Modifier.fillMaxSize(), color = CouchTrackerStyle.colors.background) {
-            var location: Location by remember { mutableStateOf(ConnectionManagement) }
-            var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
-
-            val duration = CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt()
-            val scaleSpec = tween<Float>(duration)
-            val slideSpec = tween<IntOffset>(duration)
-
-            AnimatedContent(
-                targetState = location,
-                transitionSpec = {
-                    if (targetState.depth > initialState.depth) {
-                        slideIntoContainer(AnimatedContentScope.SlideDirection.Start, slideSpec) with
-                                scaleOut(scaleSpec, 0.9f)
-                    } else {
-                        scaleIn(scaleSpec, 0.9f) with
-                                slideOutOfContainer(AnimatedContentScope.SlideDirection.End, slideSpec)
-                    }.apply {
-                        targetContentZIndex = targetState.depth.toFloat()
+        var stackData by remember { mutableStateOf(StackData.of(Home)) }
+        var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
+        StackNavigation(stackData) { l ->
+            when (l) {
+                Home -> {
+                    Button({
+                        stackData = stackData.push(ConnectionManagement)
+                    }) {
+                        Text("Manage connections")
                     }
                 }
-            ) { l ->
-                Surface(Modifier.fillMaxSize()) {
-                    when (l) {
-                        ConnectionManagement -> {
-                            ManageConnections(Modifier.fillMaxSize(), connections) {
-                                location = AddConnection
-                            }
-                        }
 
-                        AddConnection -> {
-                            AddConnection(Modifier.fillMaxSize(), { location = ConnectionManagement }) { login ->
-                                connections = connections.plus(login)
-                                location = ConnectionManagement
-                            }
-                        }
+                ConnectionManagement -> {
+                    ManageConnections(
+                        Modifier.fillMaxSize(),
+                        close = { stackData = stackData.popToParent() },
+                        connections = connections,
+                        change = { connections = it },
+                    ) {
+                        stackData = stackData.push(AddConnection)
+                    }
+                }
+
+                AddConnection -> {
+                    AddConnection(Modifier.fillMaxSize(), { stackData = stackData.popToParent() }) { login ->
+                        connections = connections.plus(login)
+                        stackData = stackData.popTo(ConnectionManagement)
                     }
                 }
             }
