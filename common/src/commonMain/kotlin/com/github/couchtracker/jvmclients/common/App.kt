@@ -7,20 +7,21 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.Location.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
 import com.github.couchtracker.jvmclients.common.navigation.AppDestination
+import com.github.couchtracker.jvmclients.common.navigation.AppDestinationData
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 
 sealed class Location(
     override val parent: Location?,
-    override val opaque: Boolean = true,
 ) : AppDestination<Location> {
 
     object Home : Location(null)
     object ConnectionManagement : Location(Home)
-    object AddConnection : Location(ConnectionManagement, opaque = false)
+    object AddConnection : Location(ConnectionManagement)
 }
 
 @Composable
@@ -34,7 +35,14 @@ fun App() {
         ) {
             var stackData by remember { mutableStateOf(StackData.of(Home)) }
             var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
-            StackNavigation(stackData) { l ->
+            StackNavigation(
+                stackData,
+                { destination, w, h ->
+                    AppDestinationData(
+                        opaque = destination != AddConnection || w < 640.dp || h < 640.dp
+                    )
+                },
+            ) { l, data ->
                 when (l) {
                     Home -> {
                         Button({
@@ -56,7 +64,11 @@ fun App() {
                     }
 
                     AddConnection -> {
-                        AddConnection(Modifier.fillMaxSize(), { stackData = stackData.popToParent() }) { login ->
+                        AddConnection(
+                            Modifier.fillMaxSize(),
+                            data.opaque,
+                            { stackData = stackData.popToParent() }
+                        ) { login ->
                             connections = connections.plus(login)
                             stackData = stackData.popTo(ConnectionManagement)
                         }

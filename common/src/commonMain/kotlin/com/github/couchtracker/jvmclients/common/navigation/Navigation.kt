@@ -6,10 +6,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,15 +18,16 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
-import com.github.couchtracker.jvmclients.common.utils.mapIsFirstLast
 import kotlinx.coroutines.channels.Channel
 
 @Composable
 fun <T : AppDestination<T>> StackNavigation(
     stack: StackData<T>,
-    composable: @Composable BoxScope.(T) -> Unit,
+    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
+    composable: @Composable BoxScope.(T, AppDestinationData) -> Unit,
 ) {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
@@ -50,12 +51,10 @@ fun <T : AppDestination<T>> StackNavigation(
                             prevIndex[it]?.plus(.5f) ?: -1f,
                             newIndex[it]?.plus(.0f) ?: -1f,
                         )
-                    }.mapIsFirstLast { item, isFirst, isLast ->
-                        val slide = isLast && item.opaque
-                        val scale = !slide
+                    }.map { item ->
                         when (item) {
-                            !in prevIndex -> item.enter(slide, scale)
-                            !in newIndex -> item.exit(slide, scale)
+                            !in prevIndex -> item.enter()
+                            !in newIndex -> item.exit()
                             else -> item.still()
                         }
                     }
@@ -75,45 +74,45 @@ fun <T : AppDestination<T>> StackNavigation(
             }
         }
     }
-    val visible = itemsAnimationStates.drop(
-        itemsAnimationStates.indexOfLast { it.opaque }.coerceAtLeast(0)
-    )
+    BoxWithConstraints {
+        val w = this.maxWidth
+        val h = this.maxHeight
 
-    RenderVisibleItems(visible, composable)
-}
+        val visible = itemsAnimationStates.drop(
+            itemsAnimationStates.indexOfLast {
+                it.opaque(dataProvider(it.destination, w, h))
+            }.coerceAtLeast(0)
+        )
 
-@Composable
-private fun <T : AppDestination<T>> RenderVisibleItems(
-    items: List<ItemAnimationState<T>>,
-    composable: @Composable BoxScope.(T) -> Unit,
-) {
-    Surface(Modifier.fillMaxSize(), color = CouchTrackerStyle.colors.background) {
-        if (items.isNotEmpty()) {
-            val topVisibility = items.last().animationState.visibility()
+        Surface(Modifier.fillMaxSize(), color = CouchTrackerStyle.colors.background) {
+            if (visible.isNotEmpty()) {
+                val topVisibility = visible.last().animationState.visibility()
 
-            items.forEachIndexed { index, (item, animationState) ->
-                val shouldBlur = index < items.size - 1
-                key(item) {
-                    var m = Modifier.fillMaxSize()
-                        .graphicsLayer {
-                            animationState.setup(this)
-                            if (shouldBlur) {
-                                val blur = (16.dp * topVisibility).toPx()
-                                this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
-                                this.clip = true
+                visible.forEachIndexed { index, (item, animationState) ->
+                    val data = dataProvider(item, w, h)
+                    val isLast = index == visible.size - 1
+                    key(item) {
+                        var m = Modifier.fillMaxSize()
+                            .graphicsLayer {
+                                animationState.setup(this, data.opaque, isLast)
+                                if (!isLast) {
+                                    val blur = (16.dp * topVisibility).toPx()
+                                    this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
+                                    this.clip = true
+                                }
+                            }
+                        if (!isLast) {
+                            m = m.drawWithContent {
+                                drawContent()
+                                drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
                             }
                         }
-                    if (shouldBlur) {
-                        m = m.drawWithContent {
-                            drawContent()
-                            drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
+                        if (data.opaque) {
+                            m = m.background(MaterialTheme.colors.background)
                         }
-                    }
-                    if (item.opaque) {
-                        m = m.background(MaterialTheme.colors.background)
-                    }
-                    Box(m, contentAlignment = Alignment.Center) {
-                        composable(item)
+                        Box(m, contentAlignment = Alignment.Center) {
+                            composable(item, data)
+                        }
                     }
                 }
             }

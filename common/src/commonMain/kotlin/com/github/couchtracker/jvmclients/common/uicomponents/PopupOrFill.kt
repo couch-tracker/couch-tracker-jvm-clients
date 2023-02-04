@@ -1,5 +1,8 @@
 package com.github.couchtracker.jvmclients.common.uicomponents
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -18,16 +21,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PopupOrFill(
     modifier: Modifier,
+    fill: Boolean,
     onDismiss: () -> Unit,
-    fill: (w: Dp, h: Dp) -> Boolean = { w, h -> w < 640.dp || h < 640.dp },
     content: @Composable (fill: Boolean) -> Unit,
 ) {
-    BoxWithConstraints(
+    Box(
         modifier,
         contentAlignment = Alignment.Center
     ) {
-        val fill = fill(this.maxWidth, this.maxHeight)
-
         Box(
             modifier
                 .clickable(

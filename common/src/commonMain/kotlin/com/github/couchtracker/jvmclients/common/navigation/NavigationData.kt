@@ -3,8 +3,11 @@ package com.github.couchtracker.jvmclients.common.navigation
 
 interface AppDestination<T : AppDestination<T>> {
     val parent: T?
-    val opaque: Boolean get() = true
 }
+
+data class AppDestinationData(
+    val opaque: Boolean = true,
+)
 
 data class StackData<T : AppDestination<T>>(
     val stack: List<T> = emptyList(),

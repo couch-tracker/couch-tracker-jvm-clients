@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
@@ -71,12 +70,13 @@ private fun shaped(content: @Composable () -> Unit) {
 @Composable
 fun AddConnection(
     modifier: Modifier,
+    fill: Boolean,
     close: () -> Unit,
     addConnection: (CouchTrackerUser) -> Unit,
 ) {
     var server: CouchTrackerServer? by remember { mutableStateOf(null) }
 
-    PopupOrFill(modifier, close) { fill ->
+    PopupOrFill(modifier, fill, close) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar(
                 { Text("Add connection") },
@@ -100,7 +100,7 @@ fun AddConnection(
                     }.using(SizeTransform(clip = false))
                 }
             ) { s ->
-                Column(Modifier.padding(vertical = 8.dp),horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (s == null) {
                         ChooseServer { server = it }
                     } else {
