@@ -42,7 +42,7 @@ fun App() {
                         opaque = destination != AddConnection || w < 640.dp || h < 640.dp
                     )
                 },
-            ) { l, data ->
+            ) { l, data, manualAnimation ->
                 when (l) {
                     Home -> {
                         Button({
@@ -55,6 +55,7 @@ fun App() {
                     ConnectionManagement -> {
                         ManageConnections(
                             Modifier.fillMaxSize(),
+                            manualAnimation,
                             close = { stackData = stackData.popToParent() },
                             connections = connections,
                             change = { connections = it },
@@ -66,6 +67,7 @@ fun App() {
                     AddConnection -> {
                         AddConnection(
                             Modifier.fillMaxSize(),
+                            manualAnimation,
                             data.opaque,
                             { stackData = stackData.popToParent() }
                         ) { login ->

@@ -9,51 +9,100 @@ sealed class AnimationState {
         val progress: Float = 0f,
     ) : AnimationState() {
 
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean) {
-            // TODO: better values
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
             if (isTop && isOpaque) {
-                g.translationX = (1 - progress) * 200
+                g.translationX += (1 - progress) * width / 3
             } else {
-                g.scaleX = (0.8f..1f).progress(progress)
-                g.scaleY = g.scaleX
+                g.scaleX *= (0.8f..1f).progress(progress)
+                g.scaleY *= (0.8f..1f).progress(progress)
             }
-            g.alpha = progress
+            g.alpha *= progress
         }
 
+        override val canProgress = true
         override fun update(progress: Float): AnimationState {
             return if (progress == 1f) Still
             else copy(progress = progress)
         }
 
-        override fun visibility() = progress
+        override fun visibility(width: Float) = progress
 
     }
 
     object Still : AnimationState() {
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean) {}
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {}
         override fun update(progress: Float) = this
-        override fun visibility() = 1f
+        override fun visibility(width: Float) = 1f
     }
 
     data class Exiting(
         val progress: Float = 0f,
-    ) :
-        AnimationState() {
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean) {
-            Entering(1f - progress).setup(g, isOpaque, isTop)
+    ) : AnimationState() {
+
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
+            Entering(1f - progress).setup(g, isOpaque, isTop, width)
         }
 
+        override val canProgress = true
         override fun update(progress: Float): AnimationState? {
             return if (progress == 1f) null
             else copy(progress = progress)
         }
 
-        override fun visibility() = 1 - progress
+        override fun visibility(width: Float) = 1 - progress
     }
 
-    abstract fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean)
+    data class ManuallyExiting(
+        val translate: Float,
+    ) : AnimationState() {
+
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
+            g.translationX += translate
+        }
+
+        override fun update(progress: Float): AnimationState? {
+            throw IllegalStateException()
+        }
+
+        // TODO: do not hardcode 200
+        override fun visibility(width: Float) = 1 - (translate / width).coerceIn(0f, 1f)
+    }
+
+    data class Combined(
+        val a: AnimationState,
+        val b: AnimationState,
+    ) : AnimationState() {
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
+            a.setup(g, isOpaque, isTop, width)
+            b.setup(g, isOpaque, isTop, width)
+        }
+
+        override val canProgress: Boolean
+            get() = a.canProgress || b.canProgress
+
+        override fun update(progress: Float): AnimationState? {
+            val na = if (a.canProgress) a.update(progress) else a
+            val nb = if (b.canProgress) b.update(progress) else b
+            return if (na == null) nb
+            else if (nb == null) na
+            else na + nb
+        }
+
+        override fun visibility(width: Float): Float {
+            return a.visibility(width) * b.visibility(width)
+        }
+    }
+
+    abstract fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float)
+    open val canProgress: Boolean = false
     abstract fun update(progress: Float): AnimationState?
-    abstract fun visibility(): Float
+    abstract fun visibility(width: Float): Float
+
+    operator fun plus(another: AnimationState): AnimationState {
+        return if (another is Still) this
+        else if (this is Still) another
+        else Combined(this, another)
+    }
 }
 
 data class ItemAnimationState<T : AppDestination<T>>(

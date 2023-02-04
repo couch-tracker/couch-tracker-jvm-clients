@@ -1,6 +1,7 @@
 package com.github.couchtracker.jvmclients.common
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,10 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 
 @Composable
 fun ManageConnections(
     modifier: Modifier,
+    manualAnimation: Animatable<Float, AnimationVector1D>,
     close: () -> Unit,
     connections: List<CouchTrackerUser>,
     change: (List<CouchTrackerUser>) -> Unit,
@@ -25,6 +28,7 @@ fun ManageConnections(
     Column(modifier) {
         TopAppBar(
             { Text("Manage connections") },
+            modifier = Modifier.swipeToGoBack(manualAnimation, close),
             navigationIcon = {
                 IconButton(close) {
                     Icon(Icons.Default.ArrowBack, "Back")

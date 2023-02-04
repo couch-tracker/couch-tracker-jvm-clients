@@ -1,8 +1,6 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
-import androidx.compose.animation.core.TargetBasedAnimation
-import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -18,6 +16,7 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
@@ -27,15 +26,16 @@ import kotlinx.coroutines.channels.Channel
 fun <T : AppDestination<T>> StackNavigation(
     stack: StackData<T>,
     dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
-    composable: @Composable BoxScope.(T, AppDestinationData) -> Unit,
+    composable: @Composable BoxScope.(T, AppDestinationData, manualAnimation: Animatable<Float, AnimationVector1D>) -> Unit,
 ) {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
     val animationSpec = tween<Float>(CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt())
-
     var itemsAnimationStates: List<ItemAnimationState<T>> by remember {
         mutableStateOf(stack.stack.map { it.still() })
     }
+    var manualAnimations by remember { mutableStateOf(emptyMap<T, Animatable<Float, AnimationVector1D>>()) }
+
     LaunchedEffect(channel) {
         var prev = stack.stack
         for (target in channel) {
@@ -65,10 +65,14 @@ fun <T : AppDestination<T>> StackNavigation(
                     targetValue = 1f
                 )
                 val startTime = withFrameNanos { it }
-                while (state.any { it.animationState != AnimationState.Still }) {
+                while (state.any { it.animationState.canProgress }) {
                     val playTime = withFrameNanos { it } - startTime
                     val animationProgress = animation.getValueFromNanos(playTime)
-                    state = state.mapNotNull { it.update(animationProgress) }
+                    state = state.mapNotNull {
+                        if (it.animationState.canProgress)
+                            it.update(animationProgress)
+                        else it
+                    }
                     itemsAnimationStates = state
                 }
             }
@@ -76,26 +80,46 @@ fun <T : AppDestination<T>> StackNavigation(
     }
     BoxWithConstraints {
         val w = this.maxWidth
+        val wPx = with(LocalDensity.current) { w.toPx() }
         val h = this.maxHeight
+        val destinations = itemsAnimationStates.mapTo(HashSet()) { it.destination }
+        if (manualAnimations.keys != destinations) {
+            manualAnimations = destinations.associateWith {
+                manualAnimations[it] ?: Animatable(0f)
+            }
+        }
 
-        val visible = itemsAnimationStates.drop(
-            itemsAnimationStates.indexOfLast {
-                it.opaque(dataProvider(it.destination, w, h))
-            }.coerceAtLeast(0)
-        )
+
+        val animationStatesWithManual = itemsAnimationStates
+            .map { ias ->
+                val manualOffset = manualAnimations.getValue(ias.destination).value
+                if (manualOffset > 0f) {
+                    ItemAnimationState(
+                        ias.destination,
+                        ias.animationState + AnimationState.ManuallyExiting(manualOffset)
+                    )
+                } else ias
+            }
+        val visible = animationStatesWithManual
+            .drop(
+                animationStatesWithManual.indexOfLast {
+                    it.opaque(dataProvider(it.destination, w, h))
+                }.coerceAtLeast(0)
+            )
 
         Surface(Modifier.fillMaxSize(), color = CouchTrackerStyle.colors.background) {
             if (visible.isNotEmpty()) {
-                val topVisibility = visible.last().animationState.visibility()
+                val topVisibility = visible.last().animationState.visibility(wPx)
 
                 visible.forEachIndexed { index, (item, animationState) ->
                     val data = dataProvider(item, w, h)
                     val isLast = index == visible.size - 1
+                    val animation = manualAnimations.getValue(item)
                     key(item) {
                         var m = Modifier.fillMaxSize()
                             .graphicsLayer {
-                                animationState.setup(this, data.opaque, isLast)
-                                if (!isLast) {
+                                animationState.setup(this, data.opaque, isLast, wPx)
+                                if (!isLast && topVisibility > 0) {
                                     val blur = (16.dp * topVisibility).toPx()
                                     this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
                                     this.clip = true
@@ -111,7 +135,7 @@ fun <T : AppDestination<T>> StackNavigation(
                             m = m.background(MaterialTheme.colors.background)
                         }
                         Box(m, contentAlignment = Alignment.Center) {
-                            composable(item, data)
+                            composable(item, data, animation)
                         }
                     }
                 }

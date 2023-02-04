@@ -3,6 +3,8 @@
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
 import com.github.couchtracker.jvmclients.common.utils.blend
 
@@ -70,6 +73,7 @@ private fun shaped(content: @Composable () -> Unit) {
 @Composable
 fun AddConnection(
     modifier: Modifier,
+    manualAnimation: Animatable<Float, AnimationVector1D>,
     fill: Boolean,
     close: () -> Unit,
     addConnection: (CouchTrackerUser) -> Unit,
@@ -80,6 +84,7 @@ fun AddConnection(
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar(
                 { Text("Add connection") },
+                modifier = Modifier.swipeToGoBack(manualAnimation, close),
                 navigationIcon = {
                     IconButton(close) {
                         Icon(Icons.Default.ArrowBack, "Back")
