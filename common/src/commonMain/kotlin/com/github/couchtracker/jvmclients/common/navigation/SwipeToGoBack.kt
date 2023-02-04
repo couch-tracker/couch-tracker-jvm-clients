@@ -59,7 +59,7 @@ fun Modifier.swipeToGoBack(
                 //    upperBound = size.width.toFloat()
                 //)
                 launch {
-                    if (targetOffsetX <= size.width / 3) {
+                    if (targetOffsetX <= size.width / 4) {
                         // Not enough velocity; Slide back.
                         offsetX.animateTo(
                             targetValue = 0f,

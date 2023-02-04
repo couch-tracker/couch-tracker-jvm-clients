@@ -25,7 +25,10 @@ sealed class Location(
 }
 
 @Composable
-fun App() {
+fun App(
+    stackData: StackData<Location>,
+    editStack: (StackData<Location>) -> Unit,
+) {
     MaterialTheme(
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
@@ -33,7 +36,6 @@ fun App() {
         CompositionLocalProvider(
             LocalElevationOverlay provides null
         ) {
-            var stackData by remember { mutableStateOf(StackData.of(Home)) }
             var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
             StackNavigation(
                 stackData,
@@ -46,7 +48,7 @@ fun App() {
                 when (l) {
                     Home -> {
                         Button({
-                            stackData = stackData.push(ConnectionManagement)
+                            editStack(stackData.push(ConnectionManagement))
                         }) {
                             Text("Manage connections")
                         }
@@ -56,11 +58,11 @@ fun App() {
                         ManageConnections(
                             Modifier.fillMaxSize(),
                             manualAnimation,
-                            close = { stackData = stackData.popToParent() },
+                            close = { editStack(stackData.popToParent()) },
                             connections = connections,
                             change = { connections = it },
                         ) {
-                            stackData = stackData.push(AddConnection)
+                            editStack(stackData.push(AddConnection))
                         }
                     }
 
@@ -69,10 +71,10 @@ fun App() {
                             Modifier.fillMaxSize(),
                             manualAnimation,
                             data.opaque,
-                            { stackData = stackData.popToParent() }
+                            { editStack(stackData.popToParent()) }
                         ) { login ->
                             connections = connections.plus(login)
-                            stackData = stackData.popTo(ConnectionManagement)
+                            editStack(stackData.popTo(ConnectionManagement))
                         }
                     }
                 }

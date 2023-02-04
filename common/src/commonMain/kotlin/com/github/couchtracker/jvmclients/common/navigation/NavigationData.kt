@@ -29,6 +29,10 @@ data class StackData<T : AppDestination<T>>(
         else popTo(p)
     }
 
+    fun canPop(): Boolean {
+        return stack.size > 1
+    }
+
     companion object {
         fun <T : AppDestination<T>> of(home: T) = StackData(listOf(home))
     }
