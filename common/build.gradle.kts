@@ -4,6 +4,7 @@ plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
     id("com.android.library")
+    kotlin("plugin.serialization") version "1.8.0"
 }
 
 group = "com.github.couchtracker"
@@ -15,11 +16,20 @@ kotlin {
         jvmToolchain(11)
     }
     sourceSets {
+        val ktorVersion = "2.2.3"
         val commonMain by getting {
             dependencies {
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)
+                api(compose.materialIconsExtended)
+
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
+
+                implementation("io.ktor:ktor-client-core:$ktorVersion")
+                implementation("io.ktor:ktor-client-cio:$ktorVersion")
+                implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
             }
         }
         val commonTest by getting {
