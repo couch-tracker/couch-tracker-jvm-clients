@@ -27,7 +27,7 @@ sealed class Location(
 @Composable
 fun App(
     stackData: StackData<Location>,
-    editStack: (StackData<Location>) -> Unit,
+    editStack: (StackData<Location>.()->StackData<Location>) -> Unit,
 ) {
     MaterialTheme(
         colors = CouchTrackerStyle.colors,
@@ -48,7 +48,7 @@ fun App(
                 when (l) {
                     Home -> {
                         Button({
-                            editStack(stackData.push(ConnectionManagement))
+                            editStack { push(ConnectionManagement) }
                         }) {
                             Text("Manage connections")
                         }
@@ -58,11 +58,11 @@ fun App(
                         ManageConnections(
                             Modifier.fillMaxSize(),
                             manualAnimation,
-                            close = { editStack(stackData.popToParent()) },
+                            close = { editStack{popToParent()} },
                             connections = connections,
                             change = { connections = it },
                         ) {
-                            editStack(stackData.push(AddConnection))
+                            editStack { push(AddConnection) }
                         }
                     }
 
@@ -71,10 +71,10 @@ fun App(
                             Modifier.fillMaxSize(),
                             manualAnimation,
                             data.opaque,
-                            { editStack(stackData.popToParent()) }
+                            { editStack { popToParent() } }
                         ) { login ->
                             connections = connections.plus(login)
-                            editStack(stackData.popTo(ConnectionManagement))
+                            editStack { popTo(ConnectionManagement) }
                         }
                     }
                 }

@@ -25,10 +25,10 @@ fun ManageConnections(
     change: (List<CouchTrackerUser>) -> Unit,
     onAdd: () -> Unit,
 ) {
-    Column(modifier) {
+    Column(modifier.swipeToGoBack(manualAnimation, close)) {
         TopAppBar(
             { Text("Manage connections") },
-            modifier = Modifier.swipeToGoBack(manualAnimation, close),
+            modifier = Modifier,
             navigationIcon = {
                 IconButton(close) {
                     Icon(Icons.Default.ArrowBack, "Back")

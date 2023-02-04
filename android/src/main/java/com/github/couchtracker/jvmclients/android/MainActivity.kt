@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
                     stackData = stackData.pop()
                 } else finish()
             }
-            App(stackData) { stackData = it }
+            App(stackData) { stackData = stackData.it() }
         }
     }
 }
