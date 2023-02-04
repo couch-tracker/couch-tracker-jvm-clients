@@ -15,7 +15,6 @@ import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 
 sealed class Location(
     override val parent: Location?,
-    override val unique: Boolean = true,
     override val opaque: Boolean = true,
 ) : AppDestination<Location> {
 

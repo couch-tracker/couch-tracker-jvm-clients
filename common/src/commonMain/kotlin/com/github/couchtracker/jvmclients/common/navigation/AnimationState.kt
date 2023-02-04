@@ -66,10 +66,10 @@ sealed class AnimationState {
 }
 
 data class ItemAnimationState<T : AppDestination<T>>(
-    val stackItem: StackItem<T>,
+    val destination: T,
     val animationState: AnimationState,
 ) {
-    val opaque = stackItem.destination.opaque && animationState == AnimationState.Still
+    val opaque = destination.opaque && animationState == AnimationState.Still
     fun update(progress: Float): ItemAnimationState<T>? {
         val newAnim = animationState.update(progress)
         return if (newAnim == null) null
@@ -77,14 +77,14 @@ data class ItemAnimationState<T : AppDestination<T>>(
     }
 }
 
-fun <T : AppDestination<T>> StackItem<T>.still() = ItemAnimationState(this, AnimationState.Still)
-fun <T : AppDestination<T>> StackItem<T>.enter(
+fun <T : AppDestination<T>> T.still() = ItemAnimationState(this, AnimationState.Still)
+fun <T : AppDestination<T>> T.enter(
     slide: Boolean = false,
     scale: Boolean = false,
     alpha: Boolean = true,
 ) = ItemAnimationState(this, AnimationState.Entering(0f, slide, scale, alpha))
 
-fun <T : AppDestination<T>> StackItem<T>.exit(
+fun <T : AppDestination<T>> T.exit(
     slide: Boolean = false,
     scale: Boolean = false,
     alpha: Boolean = true,

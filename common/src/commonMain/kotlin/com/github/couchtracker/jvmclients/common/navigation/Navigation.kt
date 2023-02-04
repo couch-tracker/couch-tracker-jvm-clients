@@ -28,22 +28,22 @@ fun <T : AppDestination<T>> StackNavigation(
     stack: StackData<T>,
     composable: @Composable BoxScope.(T) -> Unit,
 ) {
-    val channel = remember { Channel<List<StackItem<T>>>(Channel.CONFLATED) }
-    SideEffect { channel.trySend(stack.items) }
+    val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
+    SideEffect { channel.trySend(stack.stack) }
     val animationSpec = tween<Float>(CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt())
 
     var itemsAnimationStates: List<ItemAnimationState<T>> by remember {
-        mutableStateOf(stack.items.map { it.still() })
+        mutableStateOf(stack.stack.map { it.still() })
     }
     LaunchedEffect(channel) {
-        var prev = stack.items
+        var prev = stack.stack
         for (target in channel) {
             val newTarget = channel.tryReceive().getOrNull() ?: target
             val prevTarget = prev
             prev = newTarget
             if (prevTarget != newTarget) {
-                val prevIndex: Map<StackItem<T>, Int> = prevTarget.withIndex().associate { it.value to it.index }
-                val newIndex: Map<StackItem<T>, Int> = newTarget.withIndex().associate { it.value to it.index }
+                val prevIndex: Map<T, Int> = prevTarget.withIndex().associate { it.value to it.index }
+                val newIndex: Map<T, Int> = newTarget.withIndex().associate { it.value to it.index }
                 var state = (prevIndex.keys + newIndex.keys)
                     .sortedBy {
                         maxOf(
@@ -51,7 +51,7 @@ fun <T : AppDestination<T>> StackNavigation(
                             newIndex[it]?.plus(.0f) ?: -1f,
                         )
                     }.mapIsFirstLast { item, isFirst, isLast ->
-                        val slide = isLast && item.destination.opaque
+                        val slide = isLast && item.opaque
                         val scale = !slide
                         when (item) {
                             !in prevIndex -> item.enter(slide, scale)
@@ -109,11 +109,11 @@ private fun <T : AppDestination<T>> RenderVisibleItems(
                             drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
                         }
                     }
-                    if (item.destination.opaque) {
+                    if (item.opaque) {
                         m = m.background(MaterialTheme.colors.background)
                     }
                     Box(m, contentAlignment = Alignment.Center) {
-                        composable(item.destination)
+                        composable(item)
                     }
                 }
             }
