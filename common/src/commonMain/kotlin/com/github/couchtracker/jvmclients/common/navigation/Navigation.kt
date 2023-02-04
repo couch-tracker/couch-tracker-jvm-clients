@@ -13,6 +13,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
@@ -91,20 +92,27 @@ private fun <T : AppDestination<T>> RenderVisibleItems(
             val topVisibility = items.last().animationState.visibility()
 
             items.forEachIndexed { index, (item, animationState) ->
+                val shouldBlur = index < items.size - 1
                 key(item) {
-                    Box(
-                        Modifier.fillMaxSize()
-                            .graphicsLayer {
-                                animationState.setup(this)
-                                if (index < items.size - 1) {
-                                    val blur = (16.dp * topVisibility).toPx()
-                                    this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
-                                    this.clip = true
-                                }
+                    var m = Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            animationState.setup(this)
+                            if (shouldBlur) {
+                                val blur = (16.dp * topVisibility).toPx()
+                                this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
+                                this.clip = true
                             }
-                            .background(if (item.destination.opaque) MaterialTheme.colors.surface else Color.Transparent),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                        }
+                    if (shouldBlur) {
+                        m = m.drawWithContent {
+                            drawContent()
+                            drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
+                        }
+                    }
+                    if (item.destination.opaque) {
+                        m = m.background(MaterialTheme.colors.background)
+                    }
+                    Box(m, contentAlignment = Alignment.Center) {
                         composable(item.destination)
                     }
                 }

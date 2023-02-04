@@ -18,11 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
 import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
+import com.github.couchtracker.jvmclients.common.utils.blend
 
 
 @Composable
@@ -188,6 +191,7 @@ private fun Login(
                     { passwork = it },
                     Modifier.fillMaxWidth(),
                     placeholder = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                 )
             }
         }
@@ -197,7 +201,8 @@ private fun Login(
             FloatingActionButton(
                 onBack,
                 Modifier.size(40.dp),
-                backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.2f)
+                backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, 0.8f),
+                contentColor = MaterialTheme.colors.primary,
             ) {
                 Icon(Icons.Default.KeyboardArrowLeft, "Back")
             }

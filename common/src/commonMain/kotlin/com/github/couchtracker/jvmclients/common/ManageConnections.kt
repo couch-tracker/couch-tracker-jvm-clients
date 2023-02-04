@@ -22,14 +22,14 @@ fun ManageConnections(
     change: (List<CouchTrackerUser>) -> Unit,
     onAdd: () -> Unit,
 ) {
-    Column(modifier.background(MaterialTheme.colors.primary.copy(alpha = 0.1f))) {
+    Column(modifier) {
         TopAppBar(
             { Text("Manage connections") },
             navigationIcon = {
                 IconButton(close) {
                     Icon(Icons.Default.ArrowBack, "Back")
                 }
-            }
+            },
         )
         LazyColumn {
             items(connections) { conn ->

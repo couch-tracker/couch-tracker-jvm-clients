@@ -15,7 +15,7 @@ sealed class AnimationState {
         override fun setup(g: GraphicsLayerScope) {
             // TODO: better values
             if (scale) {
-                g.scaleX = (0.7f..1f).progress(progress)
+                g.scaleX = (0.8f..1f).progress(progress)
                 g.scaleY = g.scaleX
             }
             if (slide) {

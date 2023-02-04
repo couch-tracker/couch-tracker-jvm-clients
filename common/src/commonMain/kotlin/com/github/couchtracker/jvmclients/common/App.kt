@@ -2,6 +2,7 @@ package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
+import androidx.compose.material.LocalElevationOverlay
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -29,33 +30,37 @@ fun App() {
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
     ) {
-        var stackData by remember { mutableStateOf(StackData.of(Home)) }
-        var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
-        StackNavigation(stackData) { l ->
-            when (l) {
-                Home -> {
-                    Button({
-                        stackData = stackData.push(ConnectionManagement)
-                    }) {
-                        Text("Manage connections")
+        CompositionLocalProvider(
+            LocalElevationOverlay provides null
+        ) {
+            var stackData by remember { mutableStateOf(StackData.of(Home)) }
+            var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
+            StackNavigation(stackData) { l ->
+                when (l) {
+                    Home -> {
+                        Button({
+                            stackData = stackData.push(ConnectionManagement)
+                        }) {
+                            Text("Manage connections")
+                        }
                     }
-                }
 
-                ConnectionManagement -> {
-                    ManageConnections(
-                        Modifier.fillMaxSize(),
-                        close = { stackData = stackData.popToParent() },
-                        connections = connections,
-                        change = { connections = it },
-                    ) {
-                        stackData = stackData.push(AddConnection)
+                    ConnectionManagement -> {
+                        ManageConnections(
+                            Modifier.fillMaxSize(),
+                            close = { stackData = stackData.popToParent() },
+                            connections = connections,
+                            change = { connections = it },
+                        ) {
+                            stackData = stackData.push(AddConnection)
+                        }
                     }
-                }
 
-                AddConnection -> {
-                    AddConnection(Modifier.fillMaxSize(), { stackData = stackData.popToParent() }) { login ->
-                        connections = connections.plus(login)
-                        stackData = stackData.popTo(ConnectionManagement)
+                    AddConnection -> {
+                        AddConnection(Modifier.fillMaxSize(), { stackData = stackData.popToParent() }) { login ->
+                            connections = connections.plus(login)
+                            stackData = stackData.popTo(ConnectionManagement)
+                        }
                     }
                 }
             }

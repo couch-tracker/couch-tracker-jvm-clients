@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,17 +29,19 @@ fun PopupOrFill(
         val fill = fill(this.maxWidth, this.maxHeight)
 
         Box(
-            modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                enabled = !fill,
-            ) { onDismiss() },
+            modifier
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    enabled = !fill,
+                ) { onDismiss() },
         )
-
 
         Surface(
             Modifier.padding(if (fill) 0.dp else 32.dp),
             shape = if (fill) RectangleShape else MaterialTheme.shapes.large,
+            color = MaterialTheme.colors.background,
+            elevation = if (fill) 0.dp else 16.dp
         ) {
             content(fill)
         }
