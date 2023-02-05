@@ -27,12 +27,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
-import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
+import com.github.couchtracker.jvmclients.common.navigation.*
 import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.flowTransform
@@ -82,24 +81,16 @@ private fun shaped(content: @Composable () -> Unit) {
     }
 }
 
-private sealed interface AddConnectionState {
-    data class ChooseServerState(
-        val server: CouchTrackerServer
-    ) : AddConnectionState {
-
-        fun nextPage(serverInfo: CouchTrackerServerInfo): LoginState {
-            return LoginState(server, serverInfo)
-        }
+private sealed interface AddConnectionState : AppDestination<AddConnectionState> {
+    object ChooseServerState : AddConnectionState {
+        override val parent = null
     }
 
     data class LoginState(
         val server: CouchTrackerServer,
         val serverInfo: CouchTrackerServerInfo,
     ) : AddConnectionState {
-
-        fun prevPage(): ChooseServerState {
-            return ChooseServerState(server)
-        }
+        override val parent = ChooseServerState
     }
 }
 
@@ -111,7 +102,7 @@ fun AddConnection(
     close: () -> Unit,
     addConnection: (CouchTrackerUser) -> Unit,
 ) {
-    var state by remember { mutableStateOf<AddConnectionState>(AddConnectionState.ChooseServerState(CouchTrackerServer(""))) }
+    var stack by remember { mutableStateOf(StackData.of(AddConnectionState.ChooseServerState)) }
 
     PopupOrFill(modifier, fill, close) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
@@ -124,30 +115,23 @@ fun AddConnection(
                     }
                 }
             )
-            val slideSpec = tween<IntOffset>(CouchTrackerStyle.animationDuration.inWholeMilliseconds.toInt())
-            val transition = updateTransition(targetState = state)
-            transition.AnimatedContent(
-                contentKey = { it.javaClass },
-                transitionSpec = {
-                    if (targetState is AddConnectionState.ChooseServerState) {
-                        slideIntoContainer(AnimatedContentScope.SlideDirection.End, slideSpec) with
-                                slideOutOfContainer(AnimatedContentScope.SlideDirection.End, slideSpec)
-                    } else {
-                        slideIntoContainer(AnimatedContentScope.SlideDirection.Start, slideSpec) with
-                                slideOutOfContainer(AnimatedContentScope.SlideDirection.Start, slideSpec)
-                    }.using(SizeTransform(clip = false))
-                }
-            ) { p ->
-                Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    when (p) {
-                        is AddConnectionState.ChooseServerState -> {
-                            ChooseServer(p) { state = it }
-                        }
 
-                        is AddConnectionState.LoginState -> {
-                            Login(p, { state = it }, addConnection)
-                        }
+            StackNavigation(
+                stack,
+                { d, w, h -> AppDestinationData() },
+                modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),//TODO: .animateContentSize(),
+            ) { destination, info, manualAnimation2 ->
+                when (destination) {
+                    AddConnectionState.ChooseServerState -> ChooseServer(manualAnimation, close) {
+                        stack = stack.push(it)
                     }
+
+                    is AddConnectionState.LoginState -> Login(
+                        manualAnimation2,
+                        { stack = stack.pop() },
+                        destination,
+                        addConnection
+                    )
                 }
             }
         }
@@ -165,12 +149,14 @@ private sealed interface ServerState {
 
 @Composable
 private fun ChooseServer(
-    state: AddConnectionState.ChooseServerState,
-    changeState: (AddConnectionState) -> Unit,
+    manualAnimation: Animatable<Float, AnimationVector1D>,
+    back: () -> Unit,
+    pushState: (AddConnectionState.LoginState) -> Unit,
 ) {
+    var server by remember { mutableStateOf(CouchTrackerServer("")) }
     val serverStateState = flowTransform(
-        state.server,
-        if (state.server.address.isBlank()) ServerState.Ignore(state.server) else ServerState.Loading(state.server)
+        server,
+        if (server.address.isBlank()) ServerState.Ignore(server) else ServerState.Loading(server)
     ) {
         it.mapLatest { server ->
             if (server.address.isBlank()) {
@@ -187,106 +173,112 @@ private fun ChooseServer(
         }
     }
     val ssTmp = serverStateState.value
-    val serverState = if (ssTmp.server == state.server) ssTmp else ServerState.Loading(state.server)
+    val serverState = if (ssTmp.server == server) ssTmp else ServerState.Loading(server)
     val serverStateTransition = updateTransition(targetState = serverState)
+    Column(
+        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation, back),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
-    BoxElement {
-        Column {
-            Text("Couch Tracker is a decentralized service", style = MaterialTheme.typography.body1)
-            Spacer(Modifier.height(8.dp))
-            Text("To which server do you want to connect?", style = MaterialTheme.typography.body2)
+        BoxElement {
+            Column {
+                Text("Couch Tracker is a decentralized service", style = MaterialTheme.typography.body1)
+                Spacer(Modifier.height(8.dp))
+                Text("To which server do you want to connect?", style = MaterialTheme.typography.body2)
+            }
         }
-    }
-    Element {
-        shaped {
-            Box {
-                val focusRequester = FocusRequester()
-                TextField(
-                    state.server.address,
-                    { changeState(AddConnectionState.ChooseServerState(CouchTrackerServer(it.trim()))) },
-                    Modifier.fillMaxWidth().focusRequester(focusRequester),
-                    label = { Text("Server address") },
-                    singleLine = true,
-                    placeholder = { Text("https://couch-tracker.myserver.com") },
-                    isError = serverState is ServerState.Error,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions {
-                        if (serverState is ServerState.Ok) {
-                            changeState(state.nextPage(serverState.info))
-                        }
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Dns, null)
-                    },
-                )
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                serverStateTransition.Crossfade(
-                    Modifier.align(Alignment.BottomCenter),
-                    contentKey = { it.javaClass }
-                ) { serverState ->
-                    when (serverState) {
-                        is ServerState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                        is ServerState.Error -> LinearProgressIndicator(
-                            1f, Modifier.fillMaxWidth(), color = MaterialTheme.colors.error
-                        )
+        Element {
+            shaped {
+                Box {
+                    val focusRequester = FocusRequester()
+                    TextField(
+                        server.address,
+                        { server = CouchTrackerServer(it.trim()) },
+                        Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        label = { Text("Server address") },
+                        singleLine = true,
+                        placeholder = { Text("https://couch-tracker.myserver.com") },
+                        isError = serverState is ServerState.Error,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions {
+                            if (serverState is ServerState.Ok) {
+                                pushState(AddConnectionState.LoginState(serverState.server, serverState.info))
+                            }
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Dns, null)
+                        },
+                    )
+                    // TODO
+                    //LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                    serverStateTransition.Crossfade(
+                        Modifier.align(Alignment.BottomCenter),
+                        contentKey = { it.javaClass }
+                    ) { serverState ->
+                        when (serverState) {
+                            is ServerState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                            is ServerState.Error -> LinearProgressIndicator(
+                                1f, Modifier.fillMaxWidth(), color = MaterialTheme.colors.error
+                            )
 
-                        else -> {}
+                            else -> {}
+                        }
                     }
                 }
             }
         }
-    }
-    serverStateTransition.AnimatedContent(
-        transitionSpec = {
-            (fadeIn() with fadeOut()).using(SizeTransform(clip = false))
-        },
-    ) { serverState ->
-        if (serverState is ServerState.Error) {
-            Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
-                Text(
-                    serverState.error.message ?: "Unknown error",
-                    style = MaterialTheme.typography.subtitle2,
-                    color = MaterialTheme.colors.error,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        } else Spacer(Modifier.fillMaxWidth())
-    }
-    Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
-        val remoteLink = "https://github.com/couch-tracker/couch-tracker-server"
-        val str = buildAnnotatedString {
-            append("Want to host a server? Follow the instructions on ")
-            pushStringAnnotation(tag = "couch-tracker-server", annotation = remoteLink)
-            withStyle(style = SpanStyle(color = MaterialTheme.colors.primary)) {
-                append(remoteLink)
-            }
-            pop()
+        serverStateTransition.AnimatedContent(
+            transitionSpec = {
+                (fadeIn() with fadeOut()).using(SizeTransform(clip = false))
+            },
+        ) { serverState ->
+            if (serverState is ServerState.Error) {
+                Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
+                    Text(
+                        serverState.error.message ?: "Unknown error",
+                        style = MaterialTheme.typography.subtitle2,
+                        color = MaterialTheme.colors.error,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else Spacer(Modifier.fillMaxWidth())
         }
-        val uriHandler = LocalUriHandler.current
-        Text(
-            str, Modifier.clickable { uriHandler.openUri(remoteLink) },
-            style = MaterialTheme.typography.subtitle2,
-        )
-    }
-    serverStateTransition.AnimatedContent(
-        contentKey = { it is ServerState.Ok },
-        transitionSpec = {
-            if (targetState is ServerState.Ok) {
-                scaleIn() with ExitTransition.None
-            } else {
-                EnterTransition.None with scaleOut()
-            }.using(SizeTransform(clip = false))
-        },
-        contentAlignment = Alignment.Center
-    ) { serverState ->
-        if (serverState is ServerState.Ok) {
-            Element(contentAlignment = Alignment.Center) {
-                FloatingActionButton(
-                    { changeState(state.nextPage(serverState.info)) },
-                    backgroundColor = MaterialTheme.colors.primary,
-                ) {
-                    Icon(Icons.Default.KeyboardArrowRight, "Next")
+        Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
+            val remoteLink = "https://github.com/couch-tracker/couch-tracker-server"
+            val str = buildAnnotatedString {
+                append("Want to host a server? Follow the instructions on ")
+                pushStringAnnotation(tag = "couch-tracker-server", annotation = remoteLink)
+                withStyle(style = SpanStyle(color = MaterialTheme.colors.primary)) {
+                    append(remoteLink)
+                }
+                pop()
+            }
+            val uriHandler = LocalUriHandler.current
+            Text(
+                str, Modifier.clickable { uriHandler.openUri(remoteLink) },
+                style = MaterialTheme.typography.subtitle2,
+            )
+        }
+        serverStateTransition.AnimatedContent(
+            contentKey = { it is ServerState.Ok },
+            transitionSpec = {
+                if (targetState is ServerState.Ok) {
+                    scaleIn() with ExitTransition.None
+                } else {
+                    EnterTransition.None with scaleOut()
+                }.using(SizeTransform(clip = false))
+            },
+            contentAlignment = Alignment.Center
+        ) { serverState ->
+            if (serverState is ServerState.Ok) {
+                Element(contentAlignment = Alignment.Center) {
+                    FloatingActionButton(
+                        { pushState(AddConnectionState.LoginState(serverState.server, serverState.info)) },
+                        backgroundColor = MaterialTheme.colors.primary,
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowRight, "Next")
+                    }
                 }
             }
         }
@@ -295,84 +287,97 @@ private fun ChooseServer(
 
 @Composable
 private fun Login(
+    manualAnimation: Animatable<Float, AnimationVector1D>,
+    back: () -> Unit,
     state: AddConnectionState.LoginState,
-    changeState: (AddConnectionState) -> Unit,
     onLoginPicked: (CouchTrackerUser) -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
     var passwork by remember { mutableStateOf("") }
 
-    BoxElement {
-        Text(
-            "Login to ${state.server.address}",
-            style = MaterialTheme.typography.body2,
-        )
-    }
-    Element {
-        shaped {
-            Column {
-                val focusManager = LocalFocusManager.current
-                val focusRequester = FocusRequester()
-                TextField(
-                    username,
-                    { username = it },
-                    Modifier.fillMaxWidth().focusRequester(focusRequester),
-                    singleLine = true,
-                    label = { Text("Username or email") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Email),
-                    keyboardActions = KeyboardActions {
-                        focusManager.moveFocus(FocusDirection.Down)
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Filled.AccountCircle, null)
-                    },
-                )
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                var isPasswordVisible by remember { mutableStateOf(false) }
-                TextField(
-                    passwork,
-                    { passwork = it },
-                    Modifier.fillMaxWidth(),
-                    label = { Text("Password") },
-                    singleLine = true,
-                    visualTransformation = if (!isPasswordVisible) PasswordVisualTransformation()
-                    else VisualTransformation.None,
-                    trailingIcon = {
-                        IconButton({ isPasswordVisible = !isPasswordVisible }) {
-                            Icon(
-                                if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = "Password Visibility"
-                            )
-                        }
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Password, null)
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Password),
-                )
+    Column(
+        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation, back),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BoxElement {
+            Text(
+                "Login to ${state.server.address}",
+                style = MaterialTheme.typography.body2,
+            )
+        }
+        Element {
+            shaped {
+                Column {
+                    val focusManager = LocalFocusManager.current
+                    val focusRequester = FocusRequester()
+                    TextField(
+                        username,
+                        { username = it },
+                        Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        singleLine = true,
+                        label = { Text("Username or email") },
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Next,
+                            keyboardType = KeyboardType.Email
+                        ),
+                        keyboardActions = KeyboardActions {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.AccountCircle, null)
+                        },
+                    )
+                    // TODO
+                    //LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                    var isPasswordVisible by remember { mutableStateOf(false) }
+                    TextField(
+                        passwork,
+                        { passwork = it },
+                        Modifier.fillMaxWidth(),
+                        label = { Text("Password") },
+                        singleLine = true,
+                        visualTransformation = if (!isPasswordVisible) PasswordVisualTransformation()
+                        else VisualTransformation.None,
+                        trailingIcon = {
+                            IconButton({ isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = "Password Visibility"
+                                )
+                            }
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Password, null)
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done,
+                            keyboardType = KeyboardType.Password
+                        ),
+                    )
+                }
             }
         }
-    }
-    Element(contentAlignment = Alignment.Center) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            FloatingActionButton(
-                { changeState(state.prevPage()) },
-                Modifier.size(40.dp),
-                backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, 0.8f),
-                contentColor = MaterialTheme.colors.primary,
-            ) {
-                Icon(Icons.Default.KeyboardArrowLeft, "Back")
-            }
-            Spacer(Modifier.width(16.dp))
+        Element(contentAlignment = Alignment.Center) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FloatingActionButton(
+                    { back() },
+                    Modifier.size(40.dp),
+                    backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, 0.8f),
+                    contentColor = MaterialTheme.colors.primary,
+                ) {
+                    Icon(Icons.Default.KeyboardArrowLeft, "Back")
+                }
+                Spacer(Modifier.width(16.dp))
 
-            FloatingActionButton(
-                { onLoginPicked(CouchTrackerUser(state.server, username, passwork)) },
-                backgroundColor = MaterialTheme.colors.primary,
-            ) {
-                Icon(Icons.Default.Done, "Next")
-            }
+                FloatingActionButton(
+                    { onLoginPicked(CouchTrackerUser(state.server, username, passwork)) },
+                    backgroundColor = MaterialTheme.colors.primary,
+                ) {
+                    Icon(Icons.Default.Done, "Next")
+                }
 
-            Spacer(Modifier.width(56.dp))
+                Spacer(Modifier.width(56.dp))
+            }
         }
     }
 }

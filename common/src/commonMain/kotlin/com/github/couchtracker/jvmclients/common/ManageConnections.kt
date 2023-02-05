@@ -35,7 +35,7 @@ fun ManageConnections(
                 }
             },
         )
-        LazyColumn {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             items(connections) { conn ->
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("${conn.server.address}: ${conn.id}")
@@ -45,7 +45,7 @@ fun ManageConnections(
                 }
             }
             item {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+                Box(Modifier.fillMaxWidth().padding(32.dp)) {
                     Button(onAdd, Modifier.align(Alignment.Center)) {
                         Text("Add connection")
                     }

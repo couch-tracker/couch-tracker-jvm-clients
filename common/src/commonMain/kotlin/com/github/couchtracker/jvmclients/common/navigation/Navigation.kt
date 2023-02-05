@@ -2,10 +2,7 @@ package com.github.couchtracker.jvmclients.common.navigation
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.*
@@ -26,7 +23,8 @@ import kotlinx.coroutines.channels.Channel
 fun <T : AppDestination<T>> StackNavigation(
     stack: StackData<T>,
     dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
-    composable: @Composable BoxScope.(T, AppDestinationData, manualAnimation: Animatable<Float, AnimationVector1D>) -> Unit,
+    modifier: Modifier = Modifier,
+    composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: Animatable<Float, AnimationVector1D>) -> Unit),
 ) {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
@@ -100,46 +98,50 @@ fun <T : AppDestination<T>> StackNavigation(
                     )
                 } else ias
             }
-        val visible = animationStatesWithManual
-            .drop(
-                animationStatesWithManual.indexOfLast {
-                    it.opaque(dataProvider(it.destination, w, h))
-                }.coerceAtLeast(0)
-            )
+        val visible: Set<T> = itemsAnimationStates
+            .visible(w, h, dataProvider)
+            .mapTo(HashSet()) { it.destination }
+        val visibleBecauseManual = animationStatesWithManual.visible(w, h, dataProvider)
 
-        Surface(Modifier.fillMaxSize(), color = CouchTrackerStyle.colors.background) {
-            if (visible.isNotEmpty()) {
-                val topVisibility = visible.last().animationState.visibility(wPx)
+        Surface(color = CouchTrackerStyle.colors.background) {
+           Box(modifier) {
+               if (visibleBecauseManual.isNotEmpty()) {
+                   val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
 
-                visible.forEachIndexed { index, (item, animationState) ->
-                    val data = dataProvider(item, w, h)
-                    val isLast = index == visible.size - 1
-                    val animation = manualAnimations.getValue(item)
-                    key(item) {
-                        var m = Modifier.fillMaxSize()
-                            .graphicsLayer {
-                                animationState.setup(this, data.opaque, isLast, wPx)
-                                if (!isLast && topVisibility > 0) {
-                                    val blur = (16.dp * topVisibility).toPx()
-                                    this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
-                                    this.clip = true
-                                }
-                            }
-                        if (!isLast) {
-                            m = m.drawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
-                            }
-                        }
-                        if (data.opaque) {
-                            m = m.background(MaterialTheme.colors.background)
-                        }
-                        Box(m, contentAlignment = Alignment.Center) {
-                            composable(item, data, animation)
-                        }
-                    }
-                }
-            }
+                   visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
+                       val data = dataProvider(item, w, h)
+                       val isLast = index == visibleBecauseManual.size - 1
+                       val animation = manualAnimations.getValue(item)
+                       val takesPartInMeasurement = item in visible
+                       key(item) {
+                           var m = Modifier
+                               .graphicsLayer {
+                                   animationState.setup(this, data.opaque, isLast, wPx)
+                                   if (!isLast && topVisibility > 0) {
+                                       val blur = (16.dp * topVisibility).toPx()
+                                       this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
+                                       this.clip = true
+                                   }
+                               }
+                           if (!isLast) {
+                               m = m.drawWithContent {
+                                   drawContent()
+                                   drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
+                               }
+                           }
+                           if (data.opaque) {
+                               m = m.background(MaterialTheme.colors.background)
+                           }
+                           if(!takesPartInMeasurement){
+                               m = m.matchParentSize()
+                           }
+                           Box(m) {
+                               composable(item, data, animation)
+                           }
+                       }
+                   }
+               }
+           }
         }
     }
 }
