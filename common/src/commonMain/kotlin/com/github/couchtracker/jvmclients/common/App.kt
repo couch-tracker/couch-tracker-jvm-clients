@@ -1,11 +1,10 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.LocalElevationOverlay
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,20 +16,18 @@ import com.github.couchtracker.jvmclients.common.navigation.AppDestinationData
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 
-sealed class Location(
-    override val parent: Location?,
-) : AppDestination<Location> {
-
-    object Home : Location(null)
-    object ConnectionManagement : Location(Home)
-    object AddConnection : Location(ConnectionManagement)
+sealed class Location : AppDestination {
+    object Home : Location()
+    object ConnectionManagement : Location()
+    object AddConnection : Location()
 }
 
 @Composable
 fun App(
     stackData: StackData<Location>,
-    editStack: (StackData<Location>.()->StackData<Location>) -> Unit,
+    editStack: (StackData<Location>) -> Unit,
 ) {
+    val stack by rememberUpdatedState(stackData)
     MaterialTheme(
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
@@ -41,6 +38,12 @@ fun App(
             var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
             StackNavigation(
                 stackData,
+                {//TODO: this isn't right
+                    if (stack.contains(it)) {
+                        editStack(stack.pop(it))
+                        true
+                    } else false
+                },
                 { destination, w, h ->
                     AppDestinationData(
                         opaque = destination != AddConnection || w < 640.dp || h < 640.dp
@@ -49,24 +52,24 @@ fun App(
             ) { l, data, manualAnimation ->
                 when (l) {
                     Home -> {
-                       Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                           Button({
-                               editStack { push(ConnectionManagement) }
-                           }) {
-                               Text("Manage connections")
-                           }
-                       }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Button({
+                                editStack(stack.push(ConnectionManagement))
+                            }) {
+                                Text("Manage connections")
+                            }
+                        }
                     }
 
                     ConnectionManagement -> {
                         ManageConnections(
                             Modifier.fillMaxSize(),
                             manualAnimation,
-                            close = { editStack{popToParent()} },
+                            close = { editStack(stack.pop(l)) },
                             connections = connections,
                             change = { connections = it },
                         ) {
-                            editStack { push(AddConnection) }
+                            editStack(stack.push(AddConnection))
                         }
                     }
 
@@ -75,10 +78,10 @@ fun App(
                             Modifier.fillMaxSize(),
                             manualAnimation,
                             data.opaque,
-                            { editStack { popToParent() } }
+                            { editStack(stack.pop(l)) }
                         ) { login ->
                             connections = connections.plus(login)
-                            editStack { popTo(ConnectionManagement) }
+                            editStack(stack.popTo(l, ConnectionManagement))
                         }
                     }
                 }

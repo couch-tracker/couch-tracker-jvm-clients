@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class, ExperimentalMaterialApi::class)
 
 package com.github.couchtracker.jvmclients.common
 
@@ -35,7 +35,6 @@ import com.github.couchtracker.jvmclients.common.navigation.*
 import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.flowTransform
-import io.ktor.utils.io.errors.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
@@ -81,34 +80,29 @@ private fun shaped(content: @Composable () -> Unit) {
     }
 }
 
-private sealed interface AddConnectionState : AppDestination<AddConnectionState> {
-    object ChooseServerState : AddConnectionState {
-        override val parent = null
-    }
-
+private sealed interface AddConnectionState : AppDestination {
+    object ChooseServerState : AddConnectionState
     data class LoginState(
         val server: CouchTrackerServer,
         val serverInfo: CouchTrackerServerInfo,
-    ) : AddConnectionState {
-        override val parent = ChooseServerState
-    }
+    ) : AddConnectionState
 }
 
 @Composable
 fun AddConnection(
     modifier: Modifier,
-    manualAnimation: Animatable<Float, AnimationVector1D>,
+    manualAnimation: SwipeableState<Boolean>,
     fill: Boolean,
     close: () -> Unit,
     addConnection: (CouchTrackerUser) -> Unit,
 ) {
-    var stack by remember { mutableStateOf(StackData.of(AddConnectionState.ChooseServerState)) }
+    var stack by remember { mutableStateOf(StackData.of<AddConnectionState>(AddConnectionState.ChooseServerState)) }
 
     PopupOrFill(modifier, fill, close) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar(
                 { Text("Add connection") },
-                modifier = Modifier.swipeToGoBack(manualAnimation, close),
+                modifier = Modifier.swipeToGoBack(manualAnimation),
                 navigationIcon = {
                     IconButton(close) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -118,17 +112,23 @@ fun AddConnection(
 
             StackNavigation(
                 stack,
+                {
+                    if (stack.contains(it)) {
+                        stack = stack.pop(it)
+                        true
+                    } else false
+                },
                 { d, w, h -> AppDestinationData() },
                 modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),//TODO: .animateContentSize(),
             ) { destination, info, manualAnimation2 ->
                 when (destination) {
-                    AddConnectionState.ChooseServerState -> ChooseServer(manualAnimation, close) {
+                    AddConnectionState.ChooseServerState -> ChooseServer(manualAnimation) {
                         stack = stack.push(it)
                     }
 
                     is AddConnectionState.LoginState -> Login(
                         manualAnimation2,
-                        { stack = stack.pop() },
+                        { stack = stack.pop(destination) },
                         destination,
                         addConnection
                     )
@@ -149,8 +149,7 @@ private sealed interface ServerState {
 
 @Composable
 private fun ChooseServer(
-    manualAnimation: Animatable<Float, AnimationVector1D>,
-    back: () -> Unit,
+    manualAnimation: SwipeableState<Boolean>,
     pushState: (AddConnectionState.LoginState) -> Unit,
 ) {
     var server by remember { mutableStateOf(CouchTrackerServer("")) }
@@ -164,9 +163,9 @@ private fun ChooseServer(
             } else {
                 try {
                     delay(250)
-                    println("Downloading ${server.address}")
                     ServerState.Ok(server, server.info())
                 } catch (e: Exception) {
+                    e.printStackTrace() // TODO: handle errors
                     ServerState.Error(server, e)
                 }
             }
@@ -176,7 +175,7 @@ private fun ChooseServer(
     val serverState = if (ssTmp.server == server) ssTmp else ServerState.Loading(server)
     val serverStateTransition = updateTransition(targetState = serverState)
     Column(
-        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation, back),
+        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -287,7 +286,7 @@ private fun ChooseServer(
 
 @Composable
 private fun Login(
-    manualAnimation: Animatable<Float, AnimationVector1D>,
+    manualAnimation: SwipeableState<Boolean>,
     back: () -> Unit,
     state: AddConnectionState.LoginState,
     onLoginPicked: (CouchTrackerUser) -> Unit,
@@ -296,7 +295,7 @@ private fun Login(
     var passwork by remember { mutableStateOf("") }
 
     Column(
-        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation, back),
+        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxElement {

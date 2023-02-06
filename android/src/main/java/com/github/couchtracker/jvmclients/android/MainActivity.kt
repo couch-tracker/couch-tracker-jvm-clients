@@ -17,13 +17,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            var stackData by remember { mutableStateOf(StackData.of(Location.Home)) }
+            var stackData by remember { mutableStateOf(StackData.of<Location>(Location.Home)) }
             onBackPressedDispatcher.addCallback(this) {
                 if (stackData.canPop()) {
                     stackData = stackData.pop()
                 } else finish()
             }
-            App(stackData) { stackData = stackData.it() }
+            App(stackData) { stackData = it }
         }
     }
 }

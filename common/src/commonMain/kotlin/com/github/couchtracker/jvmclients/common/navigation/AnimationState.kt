@@ -64,7 +64,6 @@ sealed class AnimationState {
             throw IllegalStateException()
         }
 
-        // TODO: do not hardcode 200
         override fun visibility(width: Float) = 1 - (translate / width).coerceIn(0f, 1f)
     }
 
@@ -105,7 +104,7 @@ sealed class AnimationState {
     }
 }
 
-data class ItemAnimationState<T : AppDestination<T>>(
+data class ItemAnimationState<T : AppDestination>(
     val destination: T,
     val animationState: AnimationState,
 ) {
@@ -118,7 +117,7 @@ data class ItemAnimationState<T : AppDestination<T>>(
     }
 }
 
-fun <T : AppDestination<T>> T.still() = ItemAnimationState(this, AnimationState.Still)
-fun <T : AppDestination<T>> T.enter() = ItemAnimationState(this, AnimationState.Entering())
-fun <T : AppDestination<T>> T.exit() = ItemAnimationState(this, AnimationState.Exiting())
+fun <T : AppDestination> T.still() = ItemAnimationState(this, AnimationState.Still)
+fun <T : AppDestination> T.enter() = ItemAnimationState(this, AnimationState.Entering())
+fun <T : AppDestination> T.exit() = ItemAnimationState(this, AnimationState.Exiting())
 

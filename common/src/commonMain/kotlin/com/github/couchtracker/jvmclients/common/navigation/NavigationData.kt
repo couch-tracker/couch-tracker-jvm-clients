@@ -3,47 +3,44 @@ package com.github.couchtracker.jvmclients.common.navigation
 import androidx.compose.ui.unit.Dp
 
 
-interface AppDestination<T : AppDestination<T>> {
-    val parent: T?
-}
+interface AppDestination
 
 data class AppDestinationData(
     val opaque: Boolean = true,
 )
 
-data class StackData<T : AppDestination<T>>(
+data class StackData<T : AppDestination>(
     val stack: List<T> = emptyList(),
 ) {
     init {
         require(stack.isNotEmpty())
     }
 
-    fun pop(n: Int = 1) = StackData(stack.dropLast(n))
+    fun pop() = StackData(stack.dropLast(1))
+    fun pop(item: T): StackData<T> {
+        return StackData(stack.minus(item))
+    }
+
     fun push(item: T): StackData<T> {
         return StackData(stack.minus(item).plus(item))
     }
 
-    fun popTo(item: T): StackData<T> {
-        return pop().push(item)
-    }
-
-    fun popToParent(): StackData<T> {
-        require(stack.isNotEmpty())
-        val p = stack.last().parent
-        return if (p == null) pop()
-        else popTo(p)
+    fun popTo(toPop: T, toPush: T): StackData<T> {
+        return pop(toPop).push(toPush)
     }
 
     fun canPop(): Boolean {
         return stack.size > 1
     }
 
+    fun contains(item: T) = stack.contains(item)
+
     companion object {
-        fun <T : AppDestination<T>> of(home: T) = StackData(listOf(home))
+        fun <T : AppDestination> of(home: T) = StackData(listOf(home))
     }
 }
 
-fun <T : AppDestination<T>> List<ItemAnimationState<T>>.visible(
+fun <T : AppDestination> List<ItemAnimationState<T>>.visible(
     w: Dp, h: Dp,
     dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
 ): List<ItemAnimationState<T>> {

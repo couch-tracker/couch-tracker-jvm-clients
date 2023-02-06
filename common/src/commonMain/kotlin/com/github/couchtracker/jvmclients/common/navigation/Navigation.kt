@@ -1,10 +1,14 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.github.couchtracker.jvmclients.common.navigation
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
+import androidx.compose.material.SwipeableState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,11 +24,12 @@ import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
 import kotlinx.coroutines.channels.Channel
 
 @Composable
-fun <T : AppDestination<T>> StackNavigation(
+fun <T : AppDestination> StackNavigation(
     stack: StackData<T>,
+    dismiss: (T) -> Boolean,
     dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
     modifier: Modifier = Modifier,
-    composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: Animatable<Float, AnimationVector1D>) -> Unit),
+    composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: SwipeableState<Boolean>) -> Unit),
 ) {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
@@ -32,7 +37,7 @@ fun <T : AppDestination<T>> StackNavigation(
     var itemsAnimationStates: List<ItemAnimationState<T>> by remember {
         mutableStateOf(stack.stack.map { it.still() })
     }
-    var manualAnimations by remember { mutableStateOf(emptyMap<T, Animatable<Float, AnimationVector1D>>()) }
+    var manualAnimations by remember { mutableStateOf(emptyMap<T, SwipeableState<Boolean>>()) }
 
     LaunchedEffect(channel) {
         var prev = stack.stack
@@ -83,14 +88,20 @@ fun <T : AppDestination<T>> StackNavigation(
         val destinations = itemsAnimationStates.mapTo(HashSet()) { it.destination }
         if (manualAnimations.keys != destinations) {
             manualAnimations = destinations.associateWith {
-                manualAnimations[it] ?: Animatable(0f)
+                manualAnimations[it] ?: SwipeableState(
+                    true,
+                    confirmStateChange = { state ->
+                        if (!state) dismiss(it)
+                        else true
+                    }
+                )
             }
         }
 
 
         val animationStatesWithManual = itemsAnimationStates
             .map { ias ->
-                val manualOffset = manualAnimations.getValue(ias.destination).value
+                val manualOffset = manualAnimations.getValue(ias.destination).offset.value
                 if (manualOffset > 0f) {
                     ItemAnimationState(
                         ias.destination,
@@ -104,44 +115,44 @@ fun <T : AppDestination<T>> StackNavigation(
         val visibleBecauseManual = animationStatesWithManual.visible(w, h, dataProvider)
 
         Surface(color = CouchTrackerStyle.colors.background) {
-           Box(modifier) {
-               if (visibleBecauseManual.isNotEmpty()) {
-                   val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
+            Box(modifier) {
+                if (visibleBecauseManual.isNotEmpty()) {
+                    val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
 
-                   visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
-                       val data = dataProvider(item, w, h)
-                       val isLast = index == visibleBecauseManual.size - 1
-                       val animation = manualAnimations.getValue(item)
-                       val takesPartInMeasurement = item in visible
-                       key(item) {
-                           var m = Modifier
-                               .graphicsLayer {
-                                   animationState.setup(this, data.opaque, isLast, wPx)
-                                   if (!isLast && topVisibility > 0) {
-                                       val blur = (16.dp * topVisibility).toPx()
-                                       this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
-                                       this.clip = true
-                                   }
-                               }
-                           if (!isLast) {
-                               m = m.drawWithContent {
-                                   drawContent()
-                                   drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
-                               }
-                           }
-                           if (data.opaque) {
-                               m = m.background(MaterialTheme.colors.background)
-                           }
-                           if(!takesPartInMeasurement){
-                               m = m.matchParentSize()
-                           }
-                           Box(m) {
-                               composable(item, data, animation)
-                           }
-                       }
-                   }
-               }
-           }
+                    visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
+                        val data = dataProvider(item, w, h)
+                        val isLast = index == visibleBecauseManual.size - 1
+                        val animation = manualAnimations.getValue(item)
+                        val takesPartInMeasurement = item in visible
+                        key(item) {
+                            var m = Modifier
+                                .graphicsLayer {
+                                    animationState.setup(this, data.opaque, isLast, wPx)
+                                    if (!isLast && topVisibility > 0) {
+                                        val blur = (16.dp * topVisibility).toPx()
+                                        this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
+                                        this.clip = true
+                                    }
+                                }
+                            if (!isLast) {
+                                m = m.drawWithContent {
+                                    drawContent()
+                                    drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
+                                }
+                            }
+                            if (data.opaque) {
+                                m = m.background(MaterialTheme.colors.background)
+                            }
+                            if (!takesPartInMeasurement) {
+                                m = m.matchParentSize()
+                            }
+                            Box(m) {
+                                composable(item, data, animation)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

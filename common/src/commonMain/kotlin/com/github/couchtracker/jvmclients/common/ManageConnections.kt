@@ -1,7 +1,7 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.github.couchtracker.jvmclients.common
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,13 +19,13 @@ import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 @Composable
 fun ManageConnections(
     modifier: Modifier,
-    manualAnimation: Animatable<Float, AnimationVector1D>,
+    manualAnimation: SwipeableState<Boolean>,
     close: () -> Unit,
     connections: List<CouchTrackerUser>,
     change: (List<CouchTrackerUser>) -> Unit,
     onAdd: () -> Unit,
 ) {
-    Column(modifier.swipeToGoBack(manualAnimation, close)) {
+    Column(modifier.swipeToGoBack(manualAnimation)) {
         TopAppBar(
             { Text("Manage connections") },
             modifier = Modifier,
@@ -50,6 +50,9 @@ fun ManageConnections(
                         Text("Add connection")
                     }
                 }
+            }
+            items(100){
+                Text("$it $it $it $it ")
             }
         }
     }

@@ -14,6 +14,6 @@ import com.github.couchtracker.jvmclients.common.navigation.StackData
 fun main() = singleWindowApplication(
     state = WindowState(width = 1080.dp, height = 800.dp)
 ) {
-    var stackData by remember { mutableStateOf(StackData.of(Location.Home)) }
-    App(stackData) { stackData = stackData.it() }
+    var stackData by remember { mutableStateOf(StackData.of<Location>(Location.Home)) }
+    App(stackData) { stackData = it }
 }
