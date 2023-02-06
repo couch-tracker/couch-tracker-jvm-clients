@@ -99,16 +99,17 @@ fun <T : AppDestination> StackNavigation(
         }
 
 
-        val animationStatesWithManual = itemsAnimationStates
-            .map { ias ->
-                val manualOffset = manualAnimations.getValue(ias.destination).offset.value
-                if (manualOffset > 0f) {
-                    ItemAnimationState(
-                        ias.destination,
-                        ias.animationState + AnimationState.ManuallyExiting(manualOffset)
-                    )
-                } else ias
-            }
+        val animationStatesWithManual = itemsAnimationStates.mapIndexed { index, ias ->
+            val manualOffset = manualAnimations.getValue(ias.destination).offset.value
+            // I assume the topmost item is always in animation state, so the "hidden" destinations
+            // are ready to be rendered, and won't be choppy
+            if (manualOffset > 0f || index == itemsAnimationStates.size - 1) {
+                ItemAnimationState(
+                    ias.destination,
+                    ias.animationState + AnimationState.ManuallyExiting(manualOffset)
+                )
+            } else ias
+        }
         val visible: Set<T> = itemsAnimationStates
             .visible(w, h, dataProvider)
             .mapTo(HashSet()) { it.destination }
