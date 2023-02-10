@@ -10,11 +10,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.Location.*
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.navigation.AppDestination
 import com.github.couchtracker.jvmclients.common.navigation.AppDestinationData
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
+import com.github.couchtracker.jvmclients.common.uicomponents.addconnection.AddConnection
 
 sealed class Location : AppDestination {
     object Home : Location()
@@ -35,7 +36,7 @@ fun App(
         CompositionLocalProvider(
             LocalElevationOverlay provides null
         ) {
-            var connections by remember { mutableStateOf(emptyList<CouchTrackerUser>()) }
+            var connections by remember { mutableStateOf(emptyList<CouchTrackerConnection>()) }
             StackNavigation(
                 stackData,
                 {//TODO: this isn't right

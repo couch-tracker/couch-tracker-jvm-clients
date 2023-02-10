@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerUser
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 
 @Composable
@@ -21,8 +21,8 @@ fun ManageConnections(
     modifier: Modifier,
     manualAnimation: SwipeableState<Boolean>,
     close: () -> Unit,
-    connections: List<CouchTrackerUser>,
-    change: (List<CouchTrackerUser>) -> Unit,
+    connections: List<CouchTrackerConnection>,
+    change: (List<CouchTrackerConnection>) -> Unit,
     onAdd: () -> Unit,
 ) {
     Column(modifier.swipeToGoBack(manualAnimation)) {
