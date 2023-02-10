@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.compose")
     id("com.android.library")
     kotlin("plugin.serialization") version "1.8.0"
+    id("app.cash.sqldelight") version "2.0.0-alpha05"
 }
 
 group = "com.github.couchtracker"
@@ -30,6 +31,9 @@ kotlin {
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+
+                implementation("app.cash.sqldelight:primitive-adapters:2.0.0-alpha05")
+                implementation("app.cash.sqldelight:coroutines-extensions:2.0.0-alpha05")
             }
         }
         val commonTest by getting {
@@ -39,8 +43,9 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api("androidx.appcompat:appcompat:1.6.0")
+                api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.9.0")
+                implementation("app.cash.sqldelight:android-driver:2.0.0-alpha05")
             }
         }
         val androidUnitTest by getting {
@@ -51,6 +56,8 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 api(compose.preview)
+                implementation("app.cash.sqldelight:sqlite-driver:2.0.0-alpha05")
+                implementation("net.harawata:appdirs:1.2.1")
             }
         }
         val desktopTest by getting
@@ -67,5 +74,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+sqldelight {
+    databases {
+        create("Database") {
+            packageName.set("com.github.couchtracker.jvmclients.common.data")
+        }
     }
 }

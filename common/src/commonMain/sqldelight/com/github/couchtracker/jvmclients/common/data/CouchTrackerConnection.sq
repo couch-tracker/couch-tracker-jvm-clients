@@ -1,0 +1,21 @@
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer;
+
+CREATE TABLE CouchTrackerConnection (
+  server TEXT AS CouchTrackerServer NOT NULL,
+  id TEXT NOT NULL,
+  accessToken TEXT NOT NULL,
+  refreshToken TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX idx ON CouchTrackerConnection(server, id);
+
+insert:
+INSERT INTO CouchTrackerConnection
+VALUES ?;
+
+delete:
+DELETE FROM CouchTrackerConnection
+WHERE server=:server AND id=:id;
+
+all:
+SELECT * FROM CouchTrackerConnection;

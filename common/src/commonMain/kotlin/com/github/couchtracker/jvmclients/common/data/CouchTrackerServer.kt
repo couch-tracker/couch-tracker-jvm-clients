@@ -1,5 +1,6 @@
 package com.github.couchtracker.jvmclients.common.data
 
+import app.cash.sqldelight.ColumnAdapter
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -13,7 +14,7 @@ data class CouchTrackerServer(
     val address: String,
 ) {
     suspend fun info(): CouchTrackerServerInfo {
-        return client.get("$address/api").body<CouchTrackerServerInfo>()
+        return client.get("$address/api").body()
     }
 
     suspend fun login(login: String, password: String): CouchTrackerConnection {
@@ -38,6 +39,10 @@ data class CouchTrackerServer(
             install(ContentNegotiation) {
                 json()
             }
+        }
+        val dbAdapter = object : ColumnAdapter<CouchTrackerServer, String> {
+            override fun decode(databaseValue: String) = CouchTrackerServer(databaseValue)
+            override fun encode(value: CouchTrackerServer) = value.address
         }
     }
 }

@@ -22,7 +22,7 @@ fun ManageConnections(
     manualAnimation: SwipeableState<Boolean>,
     close: () -> Unit,
     connections: List<CouchTrackerConnection>,
-    change: (List<CouchTrackerConnection>) -> Unit,
+    delete: (CouchTrackerConnection) -> Unit,
     onAdd: () -> Unit,
 ) {
     Column(modifier.swipeToGoBack(manualAnimation)) {
@@ -38,8 +38,8 @@ fun ManageConnections(
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             items(connections) { conn ->
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${conn.server.address}: ${conn.id}")
-                    IconButton({ change(connections.minus(conn)) }) {
+                    Text("${conn.server}: ${conn.id}")
+                    IconButton({ delete(conn) }) {
                         Icon(Icons.Default.Delete, "Delete")
                     }
                 }

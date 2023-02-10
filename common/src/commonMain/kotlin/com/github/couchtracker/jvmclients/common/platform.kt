@@ -1,3 +1,7 @@
 package com.github.couchtracker.jvmclients.common
 
-expect fun getPlatformName(): String
+import app.cash.sqldelight.db.SqlDriver
+
+expect class DriverFactory {
+    fun createDriver(): SqlDriver
+}

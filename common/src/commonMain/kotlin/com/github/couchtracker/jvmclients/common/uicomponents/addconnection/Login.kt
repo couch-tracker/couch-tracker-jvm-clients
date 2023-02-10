@@ -88,7 +88,7 @@ fun Login(
         it.mapLatest { ls ->
             if (ls is LoginState.Loading) {
                 try {
-                    val conn = CouchTrackerConnection.create(server, ls.login, ls.password)
+                    val conn = server.login(ls.login, ls.password)
                     LoginState.Ok(ls.login, ls.password, conn)
                 } catch (e: Exception) {
                     e.printStackTrace() // TODO: handle errors

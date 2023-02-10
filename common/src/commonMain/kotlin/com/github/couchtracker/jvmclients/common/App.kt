@@ -9,13 +9,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.github.couchtracker.jvmclients.common.Location.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
+import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.AppDestination
 import com.github.couchtracker.jvmclients.common.navigation.AppDestinationData
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 import com.github.couchtracker.jvmclients.common.uicomponents.addconnection.AddConnection
+import kotlinx.coroutines.Dispatchers
 
 sealed class Location : AppDestination {
     object Home : Location()
@@ -25,10 +30,24 @@ sealed class Location : AppDestination {
 
 @Composable
 fun App(
+    driverFactory: DriverFactory,
     stackData: StackData<Location>,
     editStack: (StackData<Location>) -> Unit,
 ) {
+    val database = remember {
+        Database(
+            driver = driverFactory.createDriver(),
+            CouchTrackerConnectionAdapter = CouchTrackerConnection.Adapter(
+                serverAdapter = CouchTrackerServer.dbAdapter
+            )
+        )
+    }
     val stack by rememberUpdatedState(stackData)
+    val connections by database.couchTrackerConnectionQueries.all()
+        .asFlow()
+        .mapToList(Dispatchers.Default)
+        .collectAsState(emptyList())
+
     MaterialTheme(
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
@@ -36,7 +55,6 @@ fun App(
         CompositionLocalProvider(
             LocalElevationOverlay provides null
         ) {
-            var connections by remember { mutableStateOf(emptyList<CouchTrackerConnection>()) }
             StackNavigation(
                 stackData,
                 {//TODO: this isn't right
@@ -68,7 +86,9 @@ fun App(
                             manualAnimation,
                             close = { editStack(stack.pop(l)) },
                             connections = connections,
-                            change = { connections = it },
+                            delete = {
+                                database.couchTrackerConnectionQueries.delete(server = it.server, id = it.id)
+                            },
                         ) {
                             editStack(stack.push(AddConnection))
                         }
@@ -81,7 +101,7 @@ fun App(
                             data.opaque,
                             { editStack(stack.pop(l)) }
                         ) { login ->
-                            connections = connections.plus(login)
+                            database.couchTrackerConnectionQueries.insert(login)
                             editStack(stack.popTo(l, ConnectionManagement))
                         }
                     }

@@ -9,4 +9,7 @@ A non-exhaustive list of things left to do.
 Navigation:
  - Propagate the back-button action to inner components
  - Generalise the navigation components to  support more animations
- - Add state to AppDestination 
+ - Add state to AppDestination
+
+Usability:
+ - Integrate with password managers
