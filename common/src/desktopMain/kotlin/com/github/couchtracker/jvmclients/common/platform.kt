@@ -20,3 +20,5 @@ actual class DriverFactory {
         return driver
     }
 }
+
+actual fun hasBackButton(): Boolean = false

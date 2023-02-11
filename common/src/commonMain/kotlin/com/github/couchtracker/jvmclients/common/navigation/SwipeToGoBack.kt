@@ -11,8 +11,8 @@ import androidx.compose.ui.platform.LocalDensity
 @Composable
 fun Modifier.swipeToGoBack(
     manualAnimation: ManualAnimation,
-    vertical: Boolean = false,
-    horizontal: Boolean = true,
+    vertical: Boolean = manualAnimation.canPop,
+    horizontal: Boolean = false,
 ): Modifier {
     if (!vertical && !horizontal) return this
 

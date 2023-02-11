@@ -10,10 +10,11 @@ sealed class AnimationState {
         val progress: Float = 0f,
     ) : AnimationState() {
 
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
-            if (isTop && isOpaque) {
-                g.translationX += (1 - progress) * width
-            } else {
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float) {
+            if (isTop) {
+                //g.translationX += (1 - progress) * width
+                g.translationY += (1 - progress) * height
+            }else{
                 g.scaleX *= (0.95f..1f).progress(progress)
                 g.scaleY *= (0.95f..1f).progress(progress)
                 g.transformOrigin = TransformOrigin(0.5f, 1f)
@@ -32,7 +33,7 @@ sealed class AnimationState {
     }
 
     object Still : AnimationState() {
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {}
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float) {}
         override fun update(progress: Float) = this
         override fun visibility(width: Float, height: Float) = 1f
     }
@@ -41,8 +42,8 @@ sealed class AnimationState {
         val progress: Float = 0f,
     ) : AnimationState() {
 
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
-            Entering(1f - progress).setup(g, isOpaque, isTop, width)
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float) {
+            Entering(1f - progress).setup(g, isOpaque, isTop, width, height)
         }
 
         override val canProgress = true
@@ -59,7 +60,7 @@ sealed class AnimationState {
         val translateY: Float,
     ) : AnimationState() {
 
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float) {
             g.translationX += translateX
             g.translationY += translateY
         }
@@ -77,9 +78,9 @@ sealed class AnimationState {
         val a: AnimationState,
         val b: AnimationState,
     ) : AnimationState() {
-        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
-            a.setup(g, isOpaque, isTop, width)
-            b.setup(g, isOpaque, isTop, width)
+        override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float) {
+            a.setup(g, isOpaque, isTop, width, height)
+            b.setup(g, isOpaque, isTop, width, height)
         }
 
         override val canProgress: Boolean
@@ -98,7 +99,7 @@ sealed class AnimationState {
         }
     }
 
-    abstract fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float)
+    abstract fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float, height: Float)
     open val canProgress: Boolean = false
     abstract fun update(progress: Float): AnimationState?
     abstract fun visibility(width: Float, height: Float): Float

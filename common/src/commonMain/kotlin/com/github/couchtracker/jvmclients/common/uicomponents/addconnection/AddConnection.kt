@@ -52,13 +52,6 @@ object AddConnectionStyle {
     }
 
     @Composable
-    fun Shaped(content: @Composable () -> Unit) {
-        Surface(shape = MaterialTheme.shapes.medium) {
-            content()
-        }
-    }
-
-    @Composable
     fun ErrorMessage(error: String?) {
         Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
             Text(

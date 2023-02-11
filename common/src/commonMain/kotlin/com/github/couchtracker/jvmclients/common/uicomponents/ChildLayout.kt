@@ -11,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.couchtracker.jvmclients.common.hasBackButton
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 
 @Composable
@@ -26,13 +28,13 @@ fun TopAppBar(
         modifier = modifier,
         elevation = 0.dp,
         backgroundColor = MaterialTheme.colors.background,
-        navigationIcon = {
-            if (navigationData.manualAnimation.canPop) {
+        navigationIcon = if (!hasBackButton() && navigationData.manualAnimation.canPop) {
+            {
                 IconButton(navigationData.goBackOrClose) {
                     Icon(Icons.Default.ArrowBack, "Back")
                 }
             }
-        },
+        } else null,
     )
 }
 
@@ -53,23 +55,13 @@ fun ScreenOrPopup(
     onDismiss: () -> Unit,
     content: @Composable (fill: Boolean) -> Unit,
 ) {
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val w = this.maxWidth
-        Box(
-            Modifier.matchParentSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = !fill,
-                ) { onDismiss() },
-        )
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Scrim(!fill, color = Color.Transparent) {
+            onDismiss()
+        }
 
         Surface(
-            if (fill) {
-                Modifier.padding(MainLayoutChildrenSuggestedPadding.current)
-            } else {
-                Modifier.padding(32.dp)
-            },
+            Modifier.padding(if (!fill) 32.dp else 0.dp),
             shape = if (fill) screenShape() else MaterialTheme.shapes.large,
             color = MaterialTheme.colors.background,
             elevation = 16.dp

@@ -91,40 +91,37 @@ fun ChooseServer(
             }
         }
         AddConnectionStyle.Element {
-            AddConnectionStyle.Shaped {
-                Box {
-                    val focusRequester = FocusRequester()
-                    TextField(
-                        server.address,
-                        { server = CouchTrackerServer(it.trim()) },
-                        Modifier.fillMaxWidth().focusRequester(focusRequester),
-                        label = { Text("Server address") },
-                        singleLine = true,
-                        placeholder = { Text("https://couch-tracker.myserver.com") },
-                        isError = serverState is ServerState.Error,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions {
-                            if (serverState is ServerState.Ok) {
-                                pushState(AddConnectionState.LoginState(serverState.server, serverState.info))
-                            }
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Dns, null)
-                        },
-                    )
-                    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                    serverStateTransition.Crossfade(
-                        Modifier.align(Alignment.BottomCenter),
-                        contentKey = { it.javaClass }
-                    ) { serverState ->
-                        when (serverState) {
-                            is ServerState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                            is ServerState.Error -> LinearProgressIndicator(
-                                1f, Modifier.fillMaxWidth(), color = MaterialTheme.colors.error
-                            )
-
-                            else -> {}
+            Box {
+                OutlinedTextField(
+                    server.address,
+                    { server = CouchTrackerServer(it.trim()) },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Server address") },
+                    singleLine = true,
+                    placeholder = { Text("https://couch-tracker.myserver.com") },
+                    isError = serverState is ServerState.Error,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions {
+                        if (serverState is ServerState.Ok) {
+                            pushState(AddConnectionState.LoginState(serverState.server, serverState.info))
                         }
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Dns, null)
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                )
+                serverStateTransition.Crossfade(
+                    Modifier.align(Alignment.BottomCenter),
+                    contentKey = { it.javaClass }
+                ) { serverState ->
+                    when (serverState) {
+                        is ServerState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                        is ServerState.Error -> LinearProgressIndicator(
+                            1f, Modifier.fillMaxWidth(), color = MaterialTheme.colors.error
+                        )
+
+                        else -> {}
                     }
                 }
             }

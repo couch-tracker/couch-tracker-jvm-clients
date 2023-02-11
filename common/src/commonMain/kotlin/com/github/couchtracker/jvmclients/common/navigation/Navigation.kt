@@ -75,7 +75,7 @@ fun <T : AppDestination> StackNavigation(
         val w = this.maxWidth
         val wPx = with(LocalDensity.current) { w.toPx() }
         val h = this.maxHeight
-        val hPx = with(LocalDensity.current) { w.toPx() }
+        val hPx = with(LocalDensity.current) { h.toPx() }
         val destinations = itemsAnimationStates.mapTo(HashSet()) { it.destination }
         if (manualAnimations.keys != destinations) {
             manualAnimations = destinations.associateWith {
@@ -117,7 +117,7 @@ fun <T : AppDestination> StackNavigation(
                     key(item) {
                         var m = Modifier
                             .graphicsLayer {
-                                animationState.setup(this, data.opaque, isLast, wPx)
+                                animationState.setup(this, data.opaque, isLast, wPx, hPx)
                                 if (!isLast && topVisibility > 0) {
                                     // TODO: that's very similar to AnimationState.Entering... Can we merge them?
                                     this.scaleX *= (0.95f..1f).progress(1f - topVisibility)

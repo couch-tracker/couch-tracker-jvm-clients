@@ -10,3 +10,5 @@ actual class DriverFactory(private val context: Context) {
         return AndroidSqliteDriver(Database.Schema, context, "test.db")
     }
 }
+
+actual fun hasBackButton(): Boolean = true

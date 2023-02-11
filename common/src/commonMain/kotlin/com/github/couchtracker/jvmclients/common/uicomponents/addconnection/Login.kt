@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -111,7 +112,8 @@ fun Login(
     }
 
     Column(
-        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation),
+        Modifier.fillMaxSize().padding(vertical = 8.dp)
+            .swipeToGoBack(manualAnimation, horizontal = true, vertical = false),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AddConnectionStyle.BoxElement {
@@ -121,56 +123,56 @@ fun Login(
             )
         }
         AddConnectionStyle.Element {
-            AddConnectionStyle.Shaped {
-                Column {
-                    val focusManager = LocalFocusManager.current
-                    val focusRequester = FocusRequester()
-                    TextField(
-                        state.login,
-                        { state = state.withLogin(it) },
-                        Modifier.fillMaxWidth().focusRequester(focusRequester),
-                        singleLine = true,
-                        label = { Text("Username or email") },
-                        isError = state is LoginState.Error,
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Next,
-                            keyboardType = KeyboardType.Email
-                        ),
-                        keyboardActions = KeyboardActions {
-                            focusManager.moveFocus(FocusDirection.Down)
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.AccountCircle, null)
-                        },
-                    )
-                    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                    var isPasswordVisible by remember { mutableStateOf(false) }
-                    TextField(
-                        state.password,
-                        { state = state.withPassword(it) },
-                        Modifier.fillMaxWidth(),
-                        label = { Text("Password") },
-                        isError = state is LoginState.Error,
-                        singleLine = true,
-                        visualTransformation = if (!isPasswordVisible) PasswordVisualTransformation()
-                        else VisualTransformation.None,
-                        trailingIcon = {
-                            IconButton({ isPasswordVisible = !isPasswordVisible }) {
-                                Icon(
-                                    if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                    contentDescription = "Password Visibility"
-                                )
-                            }
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Password, null)
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Done,
-                            keyboardType = KeyboardType.Password
-                        ),
-                    )
-                }
+            Column {
+                val focusManager = LocalFocusManager.current
+                val focusRequester = FocusRequester()
+                OutlinedTextField(
+                    state.login,
+                    { state = state.withLogin(it) },
+                    Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    singleLine = true,
+                    label = { Text("Username or email") },
+                    isError = state is LoginState.Error,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Email
+                    ),
+                    keyboardActions = KeyboardActions {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Filled.AccountCircle, null)
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                )
+                LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                var isPasswordVisible by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    state.password,
+                    { state = state.withPassword(it) },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Password") },
+                    isError = state is LoginState.Error,
+                    singleLine = true,
+                    visualTransformation = if (!isPasswordVisible) PasswordVisualTransformation()
+                    else VisualTransformation.None,
+                    trailingIcon = {
+                        IconButton({ isPasswordVisible = !isPasswordVisible }) {
+                            Icon(
+                                if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = "Password Visibility"
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Password, null)
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                        keyboardType = KeyboardType.Password
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                )
             }
         }
         stateTransition.AnimatedContent(
