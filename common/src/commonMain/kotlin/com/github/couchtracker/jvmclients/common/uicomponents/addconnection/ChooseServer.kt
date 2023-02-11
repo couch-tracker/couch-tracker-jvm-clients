@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterialApi::class, ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class)
 
 package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
 
@@ -25,6 +25,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
+import com.github.couchtracker.jvmclients.common.navigation.ManualAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
@@ -52,7 +53,7 @@ private sealed interface ServerState {
 
 @Composable
 fun ChooseServer(
-    manualAnimation: SwipeableState<Boolean>,
+    manualAnimation: ManualAnimation,
     pushState: (AddConnectionState.LoginState) -> Unit,
 ) {
     var server by remember { mutableStateOf(CouchTrackerServer("")) }

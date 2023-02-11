@@ -1,22 +1,12 @@
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.github.couchtracker.jvmclients.common.navigation
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.SwipeableState
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
 import com.github.couchtracker.jvmclients.common.utils.progress
 import kotlinx.coroutines.channels.Channel
@@ -25,11 +15,11 @@ import kotlinx.coroutines.channels.Channel
 fun <T : AppDestination> StackNavigation(
     stack: StackData<T>,
     dismiss: (T) -> Boolean,
-    dataProvider: (T, w: Dp, h: Dp, isBottomOfStack: Boolean) -> AppDestinationData = { _, _, _, isBottomOfStack ->
-        AppDestinationData(isBottomOfStack = isBottomOfStack)
+    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData = { _, _, _ ->
+        AppDestinationData()
     },
     modifier: Modifier = Modifier,
-    composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: SwipeableState<Boolean>) -> Unit),
+    composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: ManualAnimation) -> Unit),
 ) {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
@@ -37,7 +27,7 @@ fun <T : AppDestination> StackNavigation(
     var itemsAnimationStates: List<ItemAnimationState<T>> by remember {
         mutableStateOf(stack.stack.map { it.still() })
     }
-    var manualAnimations by remember { mutableStateOf(emptyMap<T, SwipeableState<Boolean>>()) }
+    var manualAnimations by remember { mutableStateOf(emptyMap<T, ManualAnimation>()) }
 
     LaunchedEffect(channel) {
         var prev = stack.stack
@@ -85,28 +75,26 @@ fun <T : AppDestination> StackNavigation(
         val w = this.maxWidth
         val wPx = with(LocalDensity.current) { w.toPx() }
         val h = this.maxHeight
+        val hPx = with(LocalDensity.current) { w.toPx() }
         val destinations = itemsAnimationStates.mapTo(HashSet()) { it.destination }
         if (manualAnimations.keys != destinations) {
             manualAnimations = destinations.associateWith {
-                manualAnimations[it] ?: SwipeableState(
-                    true,
-                    confirmStateChange = { state ->
-                        if (!state) dismiss(it)
-                        else true
-                    }
-                )
+                manualAnimations[it] ?: ManualAnimation { state ->
+                    if (!state) dismiss(it)
+                    else true
+                }
             }
         }
 
 
         val animationStatesWithManual = itemsAnimationStates.mapIndexed { index, ias ->
-            val manualOffset = manualAnimations.getValue(ias.destination).offset.value
             // I assume the topmost item is always in animation state, so the "hidden" destinations
             // are ready to be rendered, and won't be choppy
-            if (manualOffset > 0f || index == itemsAnimationStates.size - 1) {
+            val manualAnimation = manualAnimations.getValue(ias.destination)
+            if (index == itemsAnimationStates.size - 1 || manualAnimation.isAnimating) {
                 ItemAnimationState(
                     ias.destination,
-                    ias.animationState + AnimationState.ManuallyExiting(manualOffset)
+                    ias.animationState + manualAnimation.toAnimationState()
                 )
             } else ias
         }
@@ -118,10 +106,11 @@ fun <T : AppDestination> StackNavigation(
 
         Box(modifier) {
             if (visibleBecauseManual.isNotEmpty()) {
-                val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
+                val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx, hPx)
 
                 visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
-                    val data = dataProvider(item, w, h, !hasDroppedSomething && index == 0)
+                    val canPop = hasDroppedSomething || index > 0
+                    val data = dataProvider(item, w, h)
                     val isLast = index == visibleBecauseManual.size - 1
                     val animation = manualAnimations.getValue(item)
                     val takesPartInMeasurement = item in visible
@@ -141,6 +130,9 @@ fun <T : AppDestination> StackNavigation(
                             m = m.matchParentSize()
                         }
                         Box(m) {
+                            animation.width = w
+                            animation.height = h
+                            animation.canPop = canPop
                             composable(item, data, animation)
                         }
                     }

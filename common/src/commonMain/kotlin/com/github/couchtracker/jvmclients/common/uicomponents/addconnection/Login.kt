@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterialApi::class, ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class)
 
 package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
 
@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
+import com.github.couchtracker.jvmclients.common.navigation.ManualAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
@@ -76,7 +77,7 @@ private sealed interface LoginState {
 
 @Composable
 fun Login(
-    manualAnimation: SwipeableState<Boolean>,
+    manualAnimation: ManualAnimation,
     back: () -> Unit,
     server: CouchTrackerServer,
     onLogin: (CouchTrackerConnection) -> Unit,

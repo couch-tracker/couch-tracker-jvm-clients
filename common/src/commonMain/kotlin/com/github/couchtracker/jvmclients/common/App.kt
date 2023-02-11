@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 
 sealed class Location : AppDestination {
     object Home : Location()
-    object ConnectionManagement : Location()
     object AddConnection : Location()
     data class Show(val id: String) : Location()
 }
@@ -53,101 +52,75 @@ fun App(
         colors = CouchTrackerStyle.colors,
         shapes = CouchTrackerStyle.shapes,
     ) {
-        CompositionLocalProvider(
-            LocalElevationOverlay provides null
-        ) {
-            MainLayout(
-                connections,
-                addConnection = { editStack(stack.push(AddConnection)) }
-            ) { scaffoldState ->
-                StackNavigation(
-                    stackData,
-                    {//TODO: this isn't right
-                        if (stack.contains(it) && stack.canPop()) {
-                            editStack(stack.pop(it))
-                            true
-                        } else false
-                    },
-                    { destination, w, h, isBottomOfStack ->
-                        AppDestinationData(
-                            opaque = destination != AddConnection || w < 640.dp || h < 640.dp,
-                            isBottomOfStack = isBottomOfStack,
-                        )
-                    },
-                ) { l, data, manualAnimation ->
-
-                    val navigationData = NavigationData(
-                        manualAnimation = manualAnimation,
-                        scaffoldState = scaffoldState,
-                        isBottomOfStack = data.isBottomOfStack,
-                        goBackOrClose = {
-                            if (stack.canPop()) editStack(stack.pop())
-                            else close()
-                        }
+        MainLayout(
+            connections,
+            addConnection = { editStack(stack.push(AddConnection)) }
+        ) { scaffoldState ->
+            StackNavigation(
+                stackData,
+                {//TODO: this isn't right
+                    if (stack.contains(it) && stack.canPop()) {
+                        editStack(stack.pop(it))
+                        true
+                    } else false
+                },
+                { destination, w, h ->
+                    AppDestinationData(
+                        opaque = destination != AddConnection || w < 640.dp || h < 640.dp,
                     )
+                },
+            ) { l, data, manualAnimation ->
 
-                    when (l) {
-                        Home -> {
-                            Screen {
-                                Column(
-                                    Modifier.fillMaxSize().swipeToGoBack(manualAnimation),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Spacer(Modifier.weight(1f))
-                                    Button({
-                                        editStack(stack.push(ConnectionManagement))
-                                    }) {
-                                        Text("Manage connections")
-                                    }
-                                    Button({
-                                        editStack(stack.push(Show("tmdb:57243")))
-                                    }) {
-                                        Text("Open show")
-                                    }
-                                    Spacer(Modifier.weight(1f))
+                val navigationData = NavigationData(
+                    manualAnimation = manualAnimation,
+                    scaffoldState = scaffoldState,
+                    goBackOrClose = {
+                        if (stack.canPop()) editStack(stack.pop())
+                        else close()
+                    }
+                )
+
+                when (l) {
+                    Home -> {
+                        Screen {
+                            Column(
+                                Modifier.fillMaxSize().swipeToGoBack(manualAnimation),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Spacer(Modifier.weight(1f))
+                                Button({
+                                    editStack(stack.push(Show("tmdb:57243")))
+                                }) {
+                                    Text("Open show")
                                 }
+                                Spacer(Modifier.weight(1f))
                             }
                         }
+                    }
 
-                        ConnectionManagement -> {
-                            Screen {
-                                ManageConnections(
-                                    Modifier.fillMaxSize(),
-                                    navigationData,
-                                    connections = connections,
-                                    delete = {
-                                        database.couchTrackerConnectionQueries.delete(server = it.server, id = it.id)
-                                    },
-                                ) {
-                                    editStack(stack.push(AddConnection))
-                                }
-                            }
+                    AddConnection -> {
+                        AddConnection(
+                            Modifier.fillMaxSize(),
+                            navigationData,
+                            data.opaque,
+                        ) { login ->
+                            database.couchTrackerConnectionQueries.upsert(
+                                id = login.id,
+                                server = login.server,
+                                accessToken = login.accessToken,
+                                refreshToken = login.refreshToken,
+                            )
+                            editStack(stack.pop(l))
                         }
+                    }
 
-                        AddConnection -> {
-                            AddConnection(
+                    is Show -> {
+                        Screen {
+                            ShowScreen(
                                 Modifier.fillMaxSize(),
                                 navigationData,
-                                data.opaque,
-                            ) { login ->
-                                database.couchTrackerConnectionQueries.upsert(
-                                    id = login.id,
-                                    server = login.server,
-                                    accessToken = login.accessToken,
-                                    refreshToken = login.refreshToken,
-                                )
-                                editStack(stack.popTo(l, ConnectionManagement))
-                            }
-                        }
-
-                        is Show -> {
-                            Screen {
-                                ShowScreen(
-                                    Modifier.fillMaxSize(),
-                                    navigationData,
-                                    id = l.id,
-                                )
-                            }
+                                id = l.id,
+                            )
                         }
                     }
                 }

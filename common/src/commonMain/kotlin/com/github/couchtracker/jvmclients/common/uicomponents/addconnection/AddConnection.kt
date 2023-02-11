@@ -1,12 +1,8 @@
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -97,7 +93,6 @@ fun AddConnection(
     ScreenOrPopup(modifier,  fill, navigationData.goBackOrClose) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar({ Text("Add connection") }, navigationData)
-
             StackNavigation(
                 stack,
                 {

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.github.couchtracker.jvmclients.common.uicomponents
 
 import androidx.compose.foundation.clickable
@@ -13,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 
@@ -21,20 +18,16 @@ import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 fun TopAppBar(
     title: @Composable () -> Unit,
     navigationData: NavigationData,
-    swipeToGoBack: Boolean = true,
 ) {
-    var modifier = Modifier
-        .fillMaxWidth()
-    if (swipeToGoBack) {
-        modifier = modifier.swipeToGoBack(navigationData.manualAnimation)
-    }
+    var modifier = Modifier.fillMaxWidth()
+    modifier = modifier.swipeToGoBack(navigationData.manualAnimation, true, true)
     TopAppBar(
         title = title,
         modifier = modifier,
         elevation = 0.dp,
         backgroundColor = MaterialTheme.colors.background,
         navigationIcon = {
-            if (!navigationData.isBottomOfStack) {
+            if (navigationData.manualAnimation.canPop) {
                 IconButton(navigationData.goBackOrClose) {
                     Icon(Icons.Default.ArrowBack, "Back")
                 }
@@ -73,7 +66,7 @@ fun ScreenOrPopup(
 
         Surface(
             if (fill) {
-                Modifier.padding(horizontal = (if (w > 640.dp) 16 else 8).dp)
+                Modifier.padding(MainLayoutChildrenSuggestedPadding.current)
             } else {
                 Modifier.padding(32.dp)
             },

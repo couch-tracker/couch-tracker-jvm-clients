@@ -27,14 +27,14 @@ sealed class AnimationState {
             else copy(progress = progress)
         }
 
-        override fun visibility(width: Float) = progress
+        override fun visibility(width: Float, height: Float) = progress
 
     }
 
     object Still : AnimationState() {
         override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {}
         override fun update(progress: Float) = this
-        override fun visibility(width: Float) = 1f
+        override fun visibility(width: Float, height: Float) = 1f
     }
 
     data class Exiting(
@@ -51,22 +51,26 @@ sealed class AnimationState {
             else copy(progress = progress)
         }
 
-        override fun visibility(width: Float) = 1 - progress
+        override fun visibility(width: Float, height: Float) = 1 - progress
     }
 
     data class ManuallyExiting(
-        val translate: Float,
+        val translateX: Float,
+        val translateY: Float,
     ) : AnimationState() {
 
         override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
-            g.translationX += translate
+            g.translationX += translateX
+            g.translationY += translateY
         }
 
         override fun update(progress: Float): AnimationState? {
             throw IllegalStateException()
         }
 
-        override fun visibility(width: Float) = 1 - (translate / width).coerceIn(0f, 1f)
+        override fun visibility(width: Float, height: Float): Float {
+            return (1 - translateX / width - translateY / height).coerceIn(0f, 1f)
+        }
     }
 
     data class Combined(
@@ -89,15 +93,15 @@ sealed class AnimationState {
             else na + nb
         }
 
-        override fun visibility(width: Float): Float {
-            return a.visibility(width) * b.visibility(width)
+        override fun visibility(width: Float, height: Float): Float {
+            return a.visibility(width, height) * b.visibility(width, height)
         }
     }
 
     abstract fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float)
     open val canProgress: Boolean = false
     abstract fun update(progress: Float): AnimationState?
-    abstract fun visibility(width: Float): Float
+    abstract fun visibility(width: Float, height: Float): Float
 
     operator fun plus(another: AnimationState): AnimationState {
         return if (another is Still) this
