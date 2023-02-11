@@ -2,7 +2,6 @@
 
 package com.github.couchtracker.jvmclients.common
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,7 +56,10 @@ fun App(
         CompositionLocalProvider(
             LocalElevationOverlay provides null
         ) {
-            MainLayout { scaffoldState ->
+            MainLayout(
+                connections,
+                addConnection = { editStack(stack.push(AddConnection)) }
+            ) { scaffoldState ->
                 StackNavigation(
                     stackData,
                     {//TODO: this isn't right
@@ -87,7 +89,10 @@ fun App(
                     when (l) {
                         Home -> {
                             Screen {
-                                Column(Modifier.fillMaxSize().swipeToGoBack(manualAnimation), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    Modifier.fillMaxSize().swipeToGoBack(manualAnimation),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
                                     Spacer(Modifier.weight(1f))
                                     Button({
                                         editStack(stack.push(ConnectionManagement))

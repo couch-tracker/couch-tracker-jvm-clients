@@ -2,9 +2,14 @@
 
 package com.github.couchtracker.jvmclients.common.uicomponents
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
@@ -12,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import kotlinx.coroutines.launch
 
 data class NavigationData(
@@ -23,11 +29,12 @@ data class NavigationData(
 
 @Composable
 fun MainLayout(
+    connections: List<CouchTrackerConnection>,
+    addConnection: () -> Unit,
     content: @Composable (BackdropScaffoldState?) -> Unit,
 ) {
     val innerColors = lightColors()
-
-    Scaffold { }
+    val cs = rememberCoroutineScope()
     BoxWithConstraints {
         val w = this.maxWidth
         Surface(color = MaterialTheme.colors.background) {
@@ -42,7 +49,7 @@ fun MainLayout(
                 val ssOrNull = if (drawerAlwaysOpen) null else scaffoldState
 
                 if (drawerAlwaysOpen) {
-                    MainDrawer(Modifier.width(320.dp))
+                    MainDrawer(Modifier.width(320.dp), connections, addConnection, true)
                 }
 
                 BackdropScaffold(
@@ -50,7 +57,12 @@ fun MainLayout(
                         MainTopAppBar(ssOrNull)
                     },
                     scaffoldState = scaffoldState,
-                    backLayerContent = { MainDrawer() },
+                    backLayerContent = {
+                        MainDrawer(Modifier, connections, {
+                            cs.launch { scaffoldState.conceal() }
+                            addConnection()
+                        }, false)
+                    },
                     frontLayerContent = {
                         MaterialTheme(colors = innerColors) {
                             content(ssOrNull)
@@ -95,11 +107,33 @@ private fun MainTopAppBar(
 @Composable
 private fun MainDrawer(
     modifier: Modifier = Modifier,
+    connections: List<CouchTrackerConnection>,
+    addConnection: () -> Unit,
+    isInline: Boolean,
 ) {
-    Column(modifier) {
-        ListItem(
-            icon = { Icon(Icons.Default.Home, "Home") },
-            text = { Text("Home") }
-        )
+    LazyColumn(modifier, contentPadding = PaddingValues(vertical = if (isInline) 56.dp else 0.dp)) {
+        items(connections) { conn ->
+            ListItem(
+                icon = { Icon(Icons.Default.AccountCircle, null) },
+                text = { Text(conn.id) },
+                secondaryText = {
+                    Text(conn.server.address, maxLines = 1, softWrap = false)
+                }
+            )
+        }
+        item {
+            ListItem(
+                modifier = Modifier.clickable { addConnection() },
+                icon = { Icon(Icons.Default.Add, null) },
+                text = { Text("Add account") },
+            )
+        }
+        item { Divider() }
+        item {
+            ListItem(
+                icon = { Icon(Icons.Default.Home, "Home") },
+                text = { Text("Home") },
+            )
+        }
     }
 }
