@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterialApi::class)
 
-package com.github.couchtracker.jvmclients.common
+package com.github.couchtracker.jvmclients.common.uicomponents
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,21 +19,16 @@ import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 @Composable
 fun ManageConnections(
     modifier: Modifier,
-    manualAnimation: SwipeableState<Boolean>,
-    close: () -> Unit,
+    navigationData: NavigationData,
     connections: List<CouchTrackerConnection>,
     delete: (CouchTrackerConnection) -> Unit,
     onAdd: () -> Unit,
 ) {
-    Column(modifier.swipeToGoBack(manualAnimation)) {
+    Column(modifier.swipeToGoBack(navigationData.manualAnimation)) {
         TopAppBar(
             { Text("Manage connections") },
-            modifier = Modifier,
-            navigationIcon = {
-                IconButton(close) {
-                    Icon(Icons.Default.ArrowBack, "Back")
-                }
-            },
+            navigationData,
+            swipeToGoBack = false,
         )
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             items(connections) { conn ->
@@ -50,9 +45,6 @@ fun ManageConnections(
                         Text("Add connection")
                     }
                 }
-            }
-            items(100){
-                Text("$it $it $it $it ")
             }
         }
     }

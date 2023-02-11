@@ -3,6 +3,8 @@
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -15,10 +17,8 @@ import com.github.couchtracker.jvmclients.common.Location.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.Database
-import com.github.couchtracker.jvmclients.common.navigation.AppDestination
-import com.github.couchtracker.jvmclients.common.navigation.AppDestinationData
-import com.github.couchtracker.jvmclients.common.navigation.StackData
-import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
+import com.github.couchtracker.jvmclients.common.navigation.*
+import com.github.couchtracker.jvmclients.common.uicomponents.*
 import com.github.couchtracker.jvmclients.common.uicomponents.addconnection.AddConnection
 import kotlinx.coroutines.Dispatchers
 
@@ -26,6 +26,7 @@ sealed class Location : AppDestination {
     object Home : Location()
     object ConnectionManagement : Location()
     object AddConnection : Location()
+    data class Show(val id: String) : Location()
 }
 
 @Composable
@@ -33,6 +34,7 @@ fun App(
     driverFactory: DriverFactory,
     stackData: StackData<Location>,
     editStack: (StackData<Location>) -> Unit,
+    close: () -> Unit,
 ) {
     val database = remember {
         Database(
@@ -55,54 +57,92 @@ fun App(
         CompositionLocalProvider(
             LocalElevationOverlay provides null
         ) {
-            StackNavigation(
-                stackData,
-                {//TODO: this isn't right
-                    if (stack.contains(it)) {
-                        editStack(stack.pop(it))
-                        true
-                    } else false
-                },
-                { destination, w, h ->
-                    AppDestinationData(
-                        opaque = destination != AddConnection || w < 640.dp || h < 640.dp
+            MainLayout { scaffoldState ->
+                StackNavigation(
+                    stackData,
+                    {//TODO: this isn't right
+                        if (stack.contains(it) && stack.canPop()) {
+                            editStack(stack.pop(it))
+                            true
+                        } else false
+                    },
+                    { destination, w, h, isBottomOfStack ->
+                        AppDestinationData(
+                            opaque = destination != AddConnection || w < 640.dp || h < 640.dp,
+                            isBottomOfStack = isBottomOfStack,
+                        )
+                    },
+                ) { l, data, manualAnimation ->
+
+                    val navigationData = NavigationData(
+                        manualAnimation = manualAnimation,
+                        scaffoldState = scaffoldState,
+                        isBottomOfStack = data.isBottomOfStack,
+                        goBackOrClose = {
+                            if (stack.canPop()) editStack(stack.pop())
+                            else close()
+                        }
                     )
-                },
-            ) { l, data, manualAnimation ->
-                when (l) {
-                    Home -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Button({
-                                editStack(stack.push(ConnectionManagement))
-                            }) {
-                                Text("Manage connections")
+
+                    when (l) {
+                        Home -> {
+                            Screen {
+                                Column(Modifier.fillMaxSize().swipeToGoBack(manualAnimation), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Spacer(Modifier.weight(1f))
+                                    Button({
+                                        editStack(stack.push(ConnectionManagement))
+                                    }) {
+                                        Text("Manage connections")
+                                    }
+                                    Button({
+                                        editStack(stack.push(Show("tmdb:57243")))
+                                    }) {
+                                        Text("Open show")
+                                    }
+                                    Spacer(Modifier.weight(1f))
+                                }
                             }
                         }
-                    }
 
-                    ConnectionManagement -> {
-                        ManageConnections(
-                            Modifier.fillMaxSize(),
-                            manualAnimation,
-                            close = { editStack(stack.pop(l)) },
-                            connections = connections,
-                            delete = {
-                                database.couchTrackerConnectionQueries.delete(server = it.server, id = it.id)
-                            },
-                        ) {
-                            editStack(stack.push(AddConnection))
+                        ConnectionManagement -> {
+                            Screen {
+                                ManageConnections(
+                                    Modifier.fillMaxSize(),
+                                    navigationData,
+                                    connections = connections,
+                                    delete = {
+                                        database.couchTrackerConnectionQueries.delete(server = it.server, id = it.id)
+                                    },
+                                ) {
+                                    editStack(stack.push(AddConnection))
+                                }
+                            }
                         }
-                    }
 
-                    AddConnection -> {
-                        AddConnection(
-                            Modifier.fillMaxSize(),
-                            manualAnimation,
-                            data.opaque,
-                            { editStack(stack.pop(l)) }
-                        ) { login ->
-                            database.couchTrackerConnectionQueries.insert(login)
-                            editStack(stack.popTo(l, ConnectionManagement))
+                        AddConnection -> {
+                            AddConnection(
+                                Modifier.fillMaxSize(),
+                                navigationData,
+                                data.opaque,
+                            ) { login ->
+                                database.couchTrackerConnectionQueries.upsert(
+                                    id = login.id,
+                                    server = login.server,
+                                    accessToken = login.accessToken,
+                                    refreshToken = login.refreshToken,
+                                )
+                                editStack(stack.popTo(l, ConnectionManagement))
+                            }
+                        }
+
+                        is Show -> {
+                            Screen {
+                                ShowScreen(
+                                    Modifier.fillMaxSize(),
+                                    navigationData,
+                                    id = l.id,
+                                )
+                            }
                         }
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Dp
 interface AppDestination
 
 data class AppDestinationData(
+    val isBottomOfStack: Boolean,
     val opaque: Boolean = true,
 )
 
@@ -42,11 +43,12 @@ data class StackData<T : AppDestination>(
 
 fun <T : AppDestination> List<ItemAnimationState<T>>.visible(
     w: Dp, h: Dp,
-    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
+    dataProvider: (T, w: Dp, h: Dp, isBottomOfStack: Boolean) -> AppDestinationData,
 ): List<ItemAnimationState<T>> {
     return drop(
-        indexOfLast {
-            it.opaque(dataProvider(it.destination, w, h))
-        }.coerceAtLeast(0)
+        withIndex()
+            .indexOfLast { (index, element) ->
+                element.opaque(dataProvider(element.destination, w, h, index == 0))
+            }.coerceAtLeast(0)
     )
 }

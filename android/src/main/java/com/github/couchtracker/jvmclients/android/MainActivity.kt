@@ -25,7 +25,11 @@ class MainActivity : AppCompatActivity() {
                     stackData = stackData.pop()
                 } else finish()
             }
-            App(driver, stackData) { stackData = it }
+            App(
+                driver, stackData,
+                close = { finish() },
+                editStack = { stackData = it }
+            )
         }
     }
 }

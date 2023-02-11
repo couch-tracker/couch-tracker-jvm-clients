@@ -6,7 +6,6 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +17,9 @@ import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.navigation.*
-import com.github.couchtracker.jvmclients.common.uicomponents.PopupOrFill
+import com.github.couchtracker.jvmclients.common.uicomponents.NavigationData
+import com.github.couchtracker.jvmclients.common.uicomponents.ScreenOrPopup
+import com.github.couchtracker.jvmclients.common.uicomponents.TopAppBar
 
 object AddConnectionStyle {
 
@@ -87,24 +88,15 @@ sealed interface AddConnectionState : AppDestination {
 @Composable
 fun AddConnection(
     modifier: Modifier,
-    manualAnimation: SwipeableState<Boolean>,
+    navigationData: NavigationData,
     fill: Boolean,
-    close: () -> Unit,
     addConnection: (CouchTrackerConnection) -> Unit,
 ) {
     var stack by remember { mutableStateOf(StackData.of<AddConnectionState>(AddConnectionState.ChooseServerState)) }
 
-    PopupOrFill(modifier, fill, close) { fill ->
+    ScreenOrPopup(modifier,  fill, navigationData.goBackOrClose) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
-            TopAppBar(
-                { Text("Add connection") },
-                modifier = Modifier.swipeToGoBack(manualAnimation),
-                navigationIcon = {
-                    IconButton(close) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                }
-            )
+            TopAppBar({ Text("Add connection") }, navigationData)
 
             StackNavigation(
                 stack,
@@ -114,20 +106,21 @@ fun AddConnection(
                         true
                     } else false
                 },
-                { d, w, h -> AppDestinationData() },
                 modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),//TODO: .animateContentSize(),
             ) { destination, info, manualAnimation2 ->
-                when (destination) {
-                    AddConnectionState.ChooseServerState -> ChooseServer(manualAnimation) {
-                        stack = stack.push(it)
-                    }
+                Surface(color = MaterialTheme.colors.background) {
+                    when (destination) {
+                        AddConnectionState.ChooseServerState -> ChooseServer(navigationData.manualAnimation) {
+                            stack = stack.push(it)
+                        }
 
-                    is AddConnectionState.LoginState -> Login(
-                        manualAnimation2,
-                        { stack = stack.pop(destination) },
-                        destination.server,
-                        addConnection,
-                    )
+                        is AddConnectionState.LoginState -> Login(
+                            manualAnimation2,
+                            { stack = stack.pop(destination) },
+                            destination.server,
+                            addConnection,
+                        )
+                    }
                 }
             }
         }

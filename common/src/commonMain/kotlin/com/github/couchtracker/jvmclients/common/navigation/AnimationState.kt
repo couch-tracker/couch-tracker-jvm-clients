@@ -1,6 +1,7 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
 import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.TransformOrigin
 import com.github.couchtracker.jvmclients.common.utils.progress
 
 
@@ -11,12 +12,13 @@ sealed class AnimationState {
 
         override fun setup(g: GraphicsLayerScope, isOpaque: Boolean, isTop: Boolean, width: Float) {
             if (isTop && isOpaque) {
-                g.translationX += (1 - progress) * width / 3
+                g.translationX += (1 - progress) * width
             } else {
-                g.scaleX *= (0.8f..1f).progress(progress)
-                g.scaleY *= (0.8f..1f).progress(progress)
+                g.scaleX *= (0.95f..1f).progress(progress)
+                g.scaleY *= (0.95f..1f).progress(progress)
+                g.transformOrigin = TransformOrigin(0.5f, 1f)
+                g.alpha *= progress
             }
-            g.alpha *= progress
         }
 
         override val canProgress = true

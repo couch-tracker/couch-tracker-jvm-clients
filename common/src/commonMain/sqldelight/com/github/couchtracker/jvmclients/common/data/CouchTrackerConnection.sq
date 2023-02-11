@@ -9,9 +9,14 @@ CREATE TABLE CouchTrackerConnection (
 
 CREATE UNIQUE INDEX idx ON CouchTrackerConnection(server, id);
 
-insert:
-INSERT INTO CouchTrackerConnection
-VALUES ?;
+upsert {
+  UPDATE CouchTrackerConnection
+  SET accessToken = :accessToken, refreshToken = :refreshToken
+  WHERE server=:server AND id=:id;
+
+  INSERT OR IGNORE INTO CouchTrackerConnection(server, id, accessToken, refreshToken)
+  VALUES (:server, :id, :accessToken, :refreshToken);
+}
 
 delete:
 DELETE FROM CouchTrackerConnection

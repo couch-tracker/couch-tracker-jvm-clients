@@ -13,21 +13,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
+import com.github.couchtracker.jvmclients.common.utils.progress
 import kotlinx.coroutines.channels.Channel
 
 @Composable
 fun <T : AppDestination> StackNavigation(
     stack: StackData<T>,
     dismiss: (T) -> Boolean,
-    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
+    dataProvider: (T, w: Dp, h: Dp, isBottomOfStack: Boolean) -> AppDestinationData = { _, _, _, isBottomOfStack ->
+        AppDestinationData(isBottomOfStack = isBottomOfStack)
+    },
     modifier: Modifier = Modifier,
     composable: @Composable (BoxScope.(T, AppDestinationData, manualAnimation: SwipeableState<Boolean>) -> Unit),
 ) {
@@ -114,42 +114,34 @@ fun <T : AppDestination> StackNavigation(
             .visible(w, h, dataProvider)
             .mapTo(HashSet()) { it.destination }
         val visibleBecauseManual = animationStatesWithManual.visible(w, h, dataProvider)
+        val hasDroppedSomething = visibleBecauseManual.size != animationStatesWithManual.size
 
-        Surface(color = CouchTrackerStyle.colors.background) {
-            Box(modifier) {
-                if (visibleBecauseManual.isNotEmpty()) {
-                    val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
+        Box(modifier) {
+            if (visibleBecauseManual.isNotEmpty()) {
+                val topVisibility = visibleBecauseManual.last().animationState.visibility(wPx)
 
-                    visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
-                        val data = dataProvider(item, w, h)
-                        val isLast = index == visibleBecauseManual.size - 1
-                        val animation = manualAnimations.getValue(item)
-                        val takesPartInMeasurement = item in visible
-                        key(item) {
-                            var m = Modifier
-                                .graphicsLayer {
-                                    animationState.setup(this, data.opaque, isLast, wPx)
-                                    if (!isLast && topVisibility > 0) {
-                                        val blur = (16.dp * topVisibility).toPx()
-                                        this.renderEffect = BlurEffect(blur, blur, TileMode.Clamp)
-                                        this.clip = true
-                                    }
-                                }
-                            if (!isLast) {
-                                m = m.drawWithContent {
-                                    drawContent()
-                                    drawRect(Color.Black.copy(alpha = topVisibility * 0.2f))
+                visibleBecauseManual.forEachIndexed { index, (item, animationState) ->
+                    val data = dataProvider(item, w, h, !hasDroppedSomething && index == 0)
+                    val isLast = index == visibleBecauseManual.size - 1
+                    val animation = manualAnimations.getValue(item)
+                    val takesPartInMeasurement = item in visible
+                    key(item) {
+                        var m = Modifier
+                            .graphicsLayer {
+                                animationState.setup(this, data.opaque, isLast, wPx)
+                                if (!isLast && topVisibility > 0) {
+                                    // TODO: that's very similar to AnimationState.Entering... Can we merge them?
+                                    this.scaleX *= (0.95f..1f).progress(1f - topVisibility)
+                                    this.scaleY *= (0.95f..1f).progress(1f - topVisibility)
+                                    this.alpha *= (0.6f..1f).progress(1f - topVisibility)
+                                    this.transformOrigin = TransformOrigin(0.5f, 1f)
                                 }
                             }
-                            if (data.opaque) {
-                                m = m.background(MaterialTheme.colors.background)
-                            }
-                            if (!takesPartInMeasurement) {
-                                m = m.matchParentSize()
-                            }
-                            Box(m) {
-                                composable(item, data, animation)
-                            }
+                        if (!takesPartInMeasurement) {
+                            m = m.matchParentSize()
+                        }
+                        Box(m) {
+                            composable(item, data, animation)
                         }
                     }
                 }
