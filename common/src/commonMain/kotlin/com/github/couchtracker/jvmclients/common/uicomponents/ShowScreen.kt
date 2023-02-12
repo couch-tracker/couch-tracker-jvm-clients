@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
+import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 
 @Composable
 fun ShowScreen(
@@ -12,7 +12,7 @@ fun ShowScreen(
     navigationData: NavigationData,
     id: String,
 ) {
-    Column(modifier.swipeToGoBack(navigationData.state)) {
+    Column(modifier.swipeToPop(navigationData.state)) {
         TopAppBar(
             { Text("Show $id") },
             navigationData,

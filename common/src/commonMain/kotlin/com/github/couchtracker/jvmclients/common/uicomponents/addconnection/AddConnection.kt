@@ -1,7 +1,6 @@
 package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -99,13 +98,13 @@ fun AddConnection(
                 Surface(modifier = Modifier.slideAnimation(state), color = MaterialTheme.colors.background) {
                     when (destination) {
                         AddConnectionState.ChooseServerState -> ChooseServer(
-                            Modifier.swipeToGoBack(navigationData.state),
+                            Modifier.swipeToPop(navigationData.state),
                         ) {
                             stack = stack.push(it)
                         }
 
                         is AddConnectionState.LoginState -> Login(
-                            Modifier.swipeToGoBack(state, horizontal = true, vertical = false),
+                            Modifier.swipeToPop(state, horizontal = true, vertical = false),
                             { stack = stack.pop(destination) },
                             destination.server,
                             addConnection,

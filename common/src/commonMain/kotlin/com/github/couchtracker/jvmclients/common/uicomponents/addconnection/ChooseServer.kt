@@ -23,9 +23,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
-import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
-import com.github.couchtracker.jvmclients.common.navigation.slideAnimation
-import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
 import kotlinx.coroutines.delay

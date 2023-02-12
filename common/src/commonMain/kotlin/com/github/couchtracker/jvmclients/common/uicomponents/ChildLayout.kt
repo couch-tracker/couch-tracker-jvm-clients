@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.hasBackButton
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.stackAnimation
-import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
+import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 
 @Composable
 fun TopAppBar(
@@ -21,7 +21,7 @@ fun TopAppBar(
     navigationData: NavigationData,
 ) {
     var modifier = Modifier.fillMaxWidth()
-    modifier = modifier.swipeToGoBack(navigationData.state, true, true)
+    modifier = modifier.swipeToPop(navigationData.state, true, true)
     TopAppBar(
         title = title,
         modifier = modifier,

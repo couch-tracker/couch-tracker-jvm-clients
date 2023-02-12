@@ -83,7 +83,7 @@ fun App(
                     Home -> {
                         Screen(state) {
                             Column(
-                                Modifier.fillMaxSize().swipeToGoBack(state),
+                                Modifier.fillMaxSize().swipeToPop(state),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Spacer(Modifier.weight(1f))
