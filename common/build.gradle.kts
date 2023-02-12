@@ -18,6 +18,8 @@ kotlin {
     }
     sourceSets {
         val ktorVersion = "2.2.3"
+        val sqldelightVersion = "2.0.0-alpha05"
+        val accompanistVersion = "0.28.0"
         val commonMain by getting {
             dependencies {
                 api(compose.runtime)
@@ -32,8 +34,8 @@ kotlin {
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 
-                implementation("app.cash.sqldelight:primitive-adapters:2.0.0-alpha05")
-                implementation("app.cash.sqldelight:coroutines-extensions:2.0.0-alpha05")
+                implementation("app.cash.sqldelight:primitive-adapters:$sqldelightVersion")
+                implementation("app.cash.sqldelight:coroutines-extensions:$sqldelightVersion")
             }
         }
         val commonTest by getting {
@@ -45,7 +47,7 @@ kotlin {
             dependencies {
                 api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.9.0")
-                implementation("app.cash.sqldelight:android-driver:2.0.0-alpha05")
+                implementation("app.cash.sqldelight:android-driver:$sqldelightVersion")
             }
         }
         val androidUnitTest by getting {
@@ -56,7 +58,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 api(compose.preview)
-                implementation("app.cash.sqldelight:sqlite-driver:2.0.0-alpha05")
+                implementation("app.cash.sqldelight:sqlite-driver:$sqldelightVersion")
                 implementation("net.harawata:appdirs:1.2.1")
             }
         }

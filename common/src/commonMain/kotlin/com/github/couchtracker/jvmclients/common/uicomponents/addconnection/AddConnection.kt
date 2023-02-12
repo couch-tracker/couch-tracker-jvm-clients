@@ -1,6 +1,7 @@
 package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -78,12 +79,11 @@ sealed interface AddConnectionState : AppDestination {
 fun AddConnection(
     modifier: Modifier,
     navigationData: NavigationData,
-    fill: Boolean,
     addConnection: (CouchTrackerConnection) -> Unit,
 ) {
     var stack by remember { mutableStateOf(StackData.of<AddConnectionState>(AddConnectionState.ChooseServerState)) }
 
-    ScreenOrPopup(modifier,  fill, navigationData.goBackOrClose) { fill ->
+    ScreenOrPopup(navigationData.state, navigationData.goBackOrClose, modifier) { fill ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar({ Text("Add connection") }, navigationData)
             StackNavigation(
@@ -95,15 +95,17 @@ fun AddConnection(
                     } else false
                 },
                 modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),//TODO: .animateContentSize(),
-            ) { destination, info, manualAnimation2 ->
-                Surface(color = MaterialTheme.colors.background) {
+            ) { destination, state ->
+                Surface(modifier = Modifier.slideAnimation(state), color = MaterialTheme.colors.background) {
                     when (destination) {
-                        AddConnectionState.ChooseServerState -> ChooseServer(navigationData.manualAnimation) {
+                        AddConnectionState.ChooseServerState -> ChooseServer(
+                            Modifier.swipeToGoBack(navigationData.state),
+                        ) {
                             stack = stack.push(it)
                         }
 
                         is AddConnectionState.LoginState -> Login(
-                            manualAnimation2,
+                            Modifier.swipeToGoBack(state, horizontal = true, vertical = false),
                             { stack = stack.pop(destination) },
                             destination.server,
                             addConnection,

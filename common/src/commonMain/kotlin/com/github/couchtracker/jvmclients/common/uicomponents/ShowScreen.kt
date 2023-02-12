@@ -12,7 +12,7 @@ fun ShowScreen(
     navigationData: NavigationData,
     id: String,
 ) {
-    Column(modifier.swipeToGoBack(navigationData.manualAnimation)) {
+    Column(modifier.swipeToGoBack(navigationData.state)) {
         TopAppBar(
             { Text("Show $id") },
             navigationData,

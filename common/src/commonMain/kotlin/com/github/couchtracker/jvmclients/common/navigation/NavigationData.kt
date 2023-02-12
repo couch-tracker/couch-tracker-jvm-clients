@@ -40,14 +40,15 @@ data class StackData<T : AppDestination>(
     }
 }
 
-fun <T : AppDestination> List<ItemAnimationState<T>>.visible(
+fun <T : AppDestination> List<Map.Entry<T, ItemAnimatableState>>.visible(
     w: Dp, h: Dp,
     dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
-): List<ItemAnimationState<T>> {
+): List<Map.Entry<T, ItemAnimatableState>> {
     return drop(
         withIndex()
             .indexOfLast { (index, element) ->
-                element.opaque(dataProvider(element.destination, w, h))
+                // Element on top is never considered opaque, so animations are smooth the in disappears
+                index < size - 1 && element.value.opaque(dataProvider(element.key, w, h))
             }.coerceAtLeast(0)
     )
 }

@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,8 +24,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
-import com.github.couchtracker.jvmclients.common.navigation.ManualAnimation
-import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
@@ -78,7 +75,7 @@ private sealed interface LoginState {
 
 @Composable
 fun Login(
-    manualAnimation: ManualAnimation,
+    modifier: Modifier,
     back: () -> Unit,
     server: CouchTrackerServer,
     onLogin: (CouchTrackerConnection) -> Unit,
@@ -112,8 +109,7 @@ fun Login(
     }
 
     Column(
-        Modifier.fillMaxSize().padding(vertical = 8.dp)
-            .swipeToGoBack(manualAnimation, horizontal = true, vertical = false),
+        modifier.fillMaxSize().padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AddConnectionStyle.BoxElement {

@@ -1,19 +1,18 @@
 package com.github.couchtracker.jvmclients.common.uicomponents
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.hasBackButton
+import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
+import com.github.couchtracker.jvmclients.common.navigation.stackAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 
 @Composable
@@ -22,13 +21,13 @@ fun TopAppBar(
     navigationData: NavigationData,
 ) {
     var modifier = Modifier.fillMaxWidth()
-    modifier = modifier.swipeToGoBack(navigationData.manualAnimation, true, true)
+    modifier = modifier.swipeToGoBack(navigationData.state, true, true)
     TopAppBar(
         title = title,
         modifier = modifier,
         elevation = 0.dp,
         backgroundColor = MaterialTheme.colors.background,
-        navigationIcon = if (!hasBackButton() && navigationData.manualAnimation.canPop) {
+        navigationIcon = if (!hasBackButton() && navigationData.state.canPop) {
             {
                 IconButton(navigationData.goBackOrClose) {
                     Icon(Icons.Default.ArrowBack, "Back")
@@ -40,22 +39,24 @@ fun TopAppBar(
 
 @Composable
 fun Screen(
+    state: ItemAnimatableState,
     modifier: Modifier = Modifier.fillMaxSize(),
     content: @Composable () -> Unit,
 ) {
-    ScreenOrPopup(modifier, true, {}) {
+    ScreenOrPopup(state, {}, modifier) {
         content()
     }
 }
 
 @Composable
 fun ScreenOrPopup(
-    modifier: Modifier = Modifier.fillMaxSize(),
-    fill: Boolean,
+    state: ItemAnimatableState,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize(),
     content: @Composable (fill: Boolean) -> Unit,
 ) {
-    Box(modifier, contentAlignment = Alignment.Center) {
+    val fill = state.isOpaque
+    Box(modifier.stackAnimation(state), contentAlignment = Alignment.Center) {
         Scrim(!fill, color = Color.Transparent) {
             onDismiss()
         }

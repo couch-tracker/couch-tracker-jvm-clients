@@ -15,8 +15,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -25,7 +23,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
-import com.github.couchtracker.jvmclients.common.navigation.ManualAnimation
+import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
+import com.github.couchtracker.jvmclients.common.navigation.slideAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToGoBack
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
@@ -53,7 +52,7 @@ private sealed interface ServerState {
 
 @Composable
 fun ChooseServer(
-    manualAnimation: ManualAnimation,
+    modifier: Modifier,
     pushState: (AddConnectionState.LoginState) -> Unit,
 ) {
     var server by remember { mutableStateOf(CouchTrackerServer("")) }
@@ -79,7 +78,7 @@ fun ChooseServer(
     val serverState = if (ssTmp.server == server) ssTmp else ServerState.Loading(server)
     val serverStateTransition = updateTransition(targetState = serverState)
     Column(
-        Modifier.fillMaxSize().padding(vertical = 8.dp).swipeToGoBack(manualAnimation),
+        modifier.fillMaxSize().padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 

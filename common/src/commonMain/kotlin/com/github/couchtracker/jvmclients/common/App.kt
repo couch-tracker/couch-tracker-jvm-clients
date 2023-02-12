@@ -55,7 +55,7 @@ fun App(
         MainLayout(
             connections,
             addConnection = { editStack(stack.push(AddConnection)) }
-        ) { scaffoldState ->
+        ) {
             StackNavigation(
                 stackData,
                 {//TODO: this isn't right
@@ -69,11 +69,10 @@ fun App(
                         opaque = destination != AddConnection || w < 640.dp || h < 640.dp,
                     )
                 },
-            ) { l, data, manualAnimation ->
+            ) { l, state ->
 
                 val navigationData = NavigationData(
-                    manualAnimation = manualAnimation,
-                    scaffoldState = scaffoldState,
+                    state = state,
                     goBackOrClose = {
                         if (stack.canPop()) editStack(stack.pop())
                         else close()
@@ -82,9 +81,9 @@ fun App(
 
                 when (l) {
                     Home -> {
-                        Screen {
+                        Screen(state) {
                             Column(
-                                Modifier.fillMaxSize().swipeToGoBack(manualAnimation),
+                                Modifier.fillMaxSize().swipeToGoBack(state),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Spacer(Modifier.weight(1f))
@@ -102,7 +101,6 @@ fun App(
                         AddConnection(
                             Modifier.fillMaxSize(),
                             navigationData,
-                            data.opaque,
                         ) { login ->
                             database.couchTrackerConnectionQueries.upsert(
                                 id = login.id,
@@ -115,7 +113,7 @@ fun App(
                     }
 
                     is Show -> {
-                        Screen {
+                        Screen(state) {
                             ShowScreen(
                                 Modifier.fillMaxSize(),
                                 navigationData,

@@ -2,13 +2,8 @@
 
 package com.github.couchtracker.jvmclients.common.uicomponents
 
-import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,28 +16,23 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.ManualAnimation
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+// TODO: remove this class
 data class NavigationData(
-    val manualAnimation: ManualAnimation,
-    val scaffoldState: BackdropScaffoldState?,
+    val state: ItemAnimatableState,
     val goBackOrClose: () -> Unit,
 )
 
@@ -54,7 +44,7 @@ private val drawerExpandedWidth = DRAWER_DEFAULT_WIDTH
 fun MainLayout(
     connections: List<CouchTrackerConnection>,
     addConnection: () -> Unit,
-    content: @Composable (BackdropScaffoldState?) -> Unit,
+    content: @Composable () -> Unit,
 ) {
     val innerColors = lightColors()
     val cs = rememberCoroutineScope()
@@ -82,17 +72,16 @@ fun MainLayout(
                             },
                         connections,
                         visibleWidth = { drawerInitialVisibilityPx + drawerRevealed.offset.value },
-                        addConnection = {
-                            addConnection()
-                            cs.launch { drawerRevealed.animateTo(false) }
-                        },
-                    )
+                    ) {
+                        addConnection()
+                        cs.launch { drawerRevealed.animateTo(false) }
+                    }
                     Box(Modifier
                         .padding(start = drawerInitialVisibility, end = basePadding)
                         .offset { IntOffset(drawerRevealed.offset.value.roundToInt(), 0) }
                     ) {
                         MaterialTheme(colors = innerColors) {
-                            content(null)
+                            content()
                         }
                         Scrim(drawerRevealed.targetValue) {
                             cs.launch { drawerRevealed.animateTo(false) }
