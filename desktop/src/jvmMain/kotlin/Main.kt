@@ -1,3 +1,5 @@
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,17 +18,26 @@ import com.github.couchtracker.jvmclients.common.uicomponents.HomeLocation
 fun main() {
     val driver = DriverFactory()
     application(exitProcessOnExit = true) {
+        var stackData by remember { mutableStateOf(StackData.of<Location>(HomeLocation)) }
+        val title = buildString {
+            append("Couch tracker")
+            val top = stackData.stack.last().title
+            if (top != null) {
+                append(" - ")
+                append(top)
+            }
+        }
         Window(
-            state = WindowState(width = 1080.dp, height = 800.dp),
+            state = remember { WindowState(width = 1080.dp, height = 800.dp) },
+            title = title,
             onCloseRequest = ::exitApplication,
         ) {
-            var stackData by remember { mutableStateOf(StackData.of<Location>(HomeLocation)) }
             App(
                 driver, stackData,
                 editStack = {
                     if (it == null) exitApplication()
                     else stackData = it
-                }
+                },
             )
         }
     }

@@ -4,6 +4,7 @@ package com.github.couchtracker.jvmclients.common.uicomponents
 
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
@@ -64,13 +65,14 @@ fun MainLayout(
         )
     }
 
-    fun openDrawer() {
+    fun openDrawer(force: Boolean = false) {
+        if (force) forceOpen = true
         cs.launch { drawerRevealed.animateTo(true) }
     }
 
     fun closeDrawer(force: Boolean = false) {
-        if (force || !forceOpen) {
-            forceOpen = false
+        if (force) forceOpen = false
+        if (!forceOpen) {
             cs.launch { drawerRevealed.animateTo(false) }
         }
     }
@@ -82,9 +84,9 @@ fun MainLayout(
         val drawerInitialVisibility = if (showPartialDrawer) drawerCollapsedWidth else basePadding
         val drawerInitialVisibilityPx = with(LocalDensity.current) { drawerInitialVisibility.toPx() }
         Column(Modifier.systemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
-            MainTopAppBar(stackState) {
-                forceOpen = !drawerRevealed.targetValue
-                cs.launch { drawerRevealed.animateTo(!drawerRevealed.targetValue) }
+            MainTopAppBar(drawerRevealed, stackState) {
+                if (drawerRevealed.targetValue) closeDrawer(true)
+                else openDrawer(true)
             }
             Box {
                 MainDrawer(
@@ -161,13 +163,17 @@ private fun Modifier.swipeForDrawer(
 
 @Composable
 private fun MainTopAppBar(
+    drawerRevealed: SwipeableState<Boolean>,
     stackState: List<Pair<Location, ItemAnimatableState>>,
-    toggleDrawer: () -> Unit
+    toggleDrawer: () -> Unit,
 ) {
     TopAppBar(
         title = {
-            StackNavigationUI(stackState) { location, state ->
-                Box(Modifier.crossFade(state, overlap = .75f)) { location.title() }
+            Row {
+                Spacer(Modifier.width(with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }))
+                StackNavigationUI(stackState) { location, state ->
+                    Box(Modifier.crossFade(state, overlap = .75f)) { location.title() }
+                }
             }
         },
         backgroundColor = Color.Transparent,
@@ -177,7 +183,7 @@ private fun MainTopAppBar(
             IconButton(toggleDrawer) {
                 Icon(Icons.Default.Menu, "Navigation drawer")
             }
-        }
+        },
     )
 }
 

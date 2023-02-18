@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.Location
@@ -25,6 +26,9 @@ import com.seiko.imageloader.rememberAsyncImagePainter
 
 
 data class ShowLocation(val id: String) : Location() {
+
+    override val title = "Fringe"
+
     @Composable
     override fun title() {
         Text("Fringe")

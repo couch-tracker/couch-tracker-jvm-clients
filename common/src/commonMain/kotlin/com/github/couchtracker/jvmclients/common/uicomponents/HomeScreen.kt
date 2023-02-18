@@ -16,6 +16,9 @@ import com.github.couchtracker.jvmclients.common.navigation.popOrNull
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 
 object HomeLocation : Location() {
+
+    override val title = null
+
     @Composable
     override fun title() {
         Text("Couch tracker")

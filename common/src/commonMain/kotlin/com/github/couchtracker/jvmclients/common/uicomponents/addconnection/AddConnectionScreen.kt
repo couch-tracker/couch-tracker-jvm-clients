@@ -18,9 +18,10 @@ import com.github.couchtracker.jvmclients.common.uicomponents.ScreenOrPopup
 import com.github.couchtracker.jvmclients.common.uicomponents.TopAppBar
 
 object AddConnectionLocation : Location() {
+    override val title = "Add connection"
+
     @Composable
     override fun title() {
-        Text("Add connection")
     }
 
     @Composable
@@ -118,7 +119,10 @@ fun AddConnectionScreen(
                 },
                 modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),
             ) { destination, childState ->
-                Surface(modifier = Modifier.slideAnimation(childState, width), color = MaterialTheme.colors.background) {
+                Surface(
+                    modifier = Modifier.slideAnimation(childState, width),
+                    color = MaterialTheme.colors.background
+                ) {
                     when (destination) {
                         AddConnectionState.ChooseServerState -> ChooseServer(
                             Modifier.swipeToPop(state, width, height),

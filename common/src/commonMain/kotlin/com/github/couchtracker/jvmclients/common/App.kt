@@ -1,6 +1,7 @@
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
@@ -16,6 +17,8 @@ import com.seiko.imageloader.LocalImageLoader
 import kotlinx.coroutines.Dispatchers
 
 abstract class Location : AppDestination {
+
+    abstract val title: String?
 
     @Composable
     abstract fun title()
@@ -74,7 +77,7 @@ fun App(
                     connections,
                     showPartialDrawer = maxWidth >= 640.dp,
                     resizeContent = maxWidth >= 960.dp,
-                    addConnection = { editStack(stack.push(AddConnectionLocation)) }
+                    addConnection = { editStack(stack.push(AddConnectionLocation)) },
                 ) {
                     StackNavigationUI(stackState) { location, state ->
                         location.content(database, stack, state, editStack)
