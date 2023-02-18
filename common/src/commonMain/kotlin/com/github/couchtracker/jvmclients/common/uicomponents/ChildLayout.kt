@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.hasBackButton
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
@@ -18,18 +20,28 @@ import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 @Composable
 fun TopAppBar(
     title: @Composable () -> Unit,
-    navigationData: NavigationData,
+    state: ItemAnimatableState,
+    goBackOrClose: () -> Unit,
+    screenWidth: Dp, screenHeight: Dp,
+    swipeable: Boolean = true,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colors.background,
+    contentColor: Color = contentColorFor(backgroundColor),
+    showBackButton: Boolean = !hasBackButton() && state.canPop,
 ) {
-    var modifier = Modifier.fillMaxWidth()
-    modifier = modifier.swipeToPop(navigationData.state, true, true)
+    var m = modifier.fillMaxWidth()
+    if (swipeable) {
+        m = m.swipeToPop(state, screenWidth, screenHeight, true, true)
+    }
     TopAppBar(
         title = title,
-        modifier = modifier,
+        modifier = m,
         elevation = 0.dp,
-        backgroundColor = MaterialTheme.colors.background,
-        navigationIcon = if (!hasBackButton() && navigationData.state.canPop) {
+        backgroundColor = backgroundColor,
+        contentColor = contentColor,
+        navigationIcon = if (showBackButton) {
             {
-                IconButton(navigationData.goBackOrClose) {
+                IconButton(goBackOrClose) {
                     Icon(Icons.Default.ArrowBack, "Back")
                 }
             }
@@ -41,10 +53,10 @@ fun TopAppBar(
 fun Screen(
     state: ItemAnimatableState,
     modifier: Modifier = Modifier.fillMaxSize(),
-    content: @Composable () -> Unit,
+    content: @Composable (w: Dp, h: Dp) -> Unit,
 ) {
-    ScreenOrPopup(state, {}, modifier) {
-        content()
+    ScreenOrPopup(state, { }, modifier) { _, w, h ->
+        content(w, h)
     }
 }
 
@@ -53,27 +65,40 @@ fun ScreenOrPopup(
     state: ItemAnimatableState,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
-    content: @Composable (fill: Boolean) -> Unit,
+    content: @Composable (fill: Boolean, w: Dp, h: Dp) -> Unit,
 ) {
     val fill = state.isOpaque
-    Box(modifier.stackAnimation(state), contentAlignment = Alignment.Center) {
-        Scrim(!fill, color = Color.Transparent) {
-            onDismiss()
-        }
-
-        Surface(
-            Modifier.padding(if (!fill) 32.dp else 0.dp),
-            shape = if (fill) screenShape() else MaterialTheme.shapes.large,
-            color = MaterialTheme.colors.background,
-            elevation = 16.dp
-        ) {
-            content(fill)
+    BoxWithConstraints {
+        val w = maxWidth
+        val h = maxHeight
+        Box(modifier.stackAnimation(state, w, h), contentAlignment = Alignment.Center) {
+            Scrim(!fill, onDismiss)
+            ScreenCard(fullscreen = fill) {
+                content(fill, w, h)
+            }
         }
     }
 }
 
 @Composable
-private fun screenShape() = MaterialTheme.shapes.large.copy(
-    bottomStart = CornerSize(0.dp),
-    bottomEnd = CornerSize(0.dp),
-)
+fun ScreenCard(
+    modifier: Modifier = Modifier,
+    fullscreen: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier.padding(if (!fullscreen) 32.dp else 0.dp),
+        shape = when {
+            fullscreen -> MaterialTheme.shapes.large.copy(
+                bottomStart = CornerSize(0.dp),
+                bottomEnd = CornerSize(0.dp),
+            )
+
+            else -> MaterialTheme.shapes.large
+        },
+        color = MaterialTheme.colors.background,
+        elevation = 16.dp,
+    ) {
+        content()
+    }
+}

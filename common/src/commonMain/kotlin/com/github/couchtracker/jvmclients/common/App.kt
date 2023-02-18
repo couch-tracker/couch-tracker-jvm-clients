@@ -1,38 +1,42 @@
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.github.couchtracker.jvmclients.common
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import com.github.couchtracker.jvmclients.common.Location.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.*
 import com.github.couchtracker.jvmclients.common.uicomponents.*
-import com.github.couchtracker.jvmclients.common.uicomponents.addconnection.AddConnection
+import com.github.couchtracker.jvmclients.common.uicomponents.addconnection.AddConnectionLocation
+import com.seiko.imageloader.LocalImageLoader
 import kotlinx.coroutines.Dispatchers
 
-sealed class Location : AppDestination {
-    object Home : Location()
-    object AddConnection : Location()
-    data class Show(val id: String) : Location()
+abstract class Location : AppDestination {
+
+    @Composable
+    abstract fun title()
+
+    @Composable
+    abstract fun background()
+
+    @Composable
+    abstract fun content(
+        database: Database,
+        stackData: StackData<Location>,
+        state: ItemAnimatableState,
+        editStack: (StackData<Location>?) -> Unit,
+    )
 }
 
 @Composable
 fun App(
     driverFactory: DriverFactory,
     stackData: StackData<Location>,
-    editStack: (StackData<Location>) -> Unit,
-    close: () -> Unit,
+    editStack: (StackData<Location>?) -> Unit,
 ) {
     val database = remember {
         Database(
@@ -42,84 +46,38 @@ fun App(
             )
         )
     }
-    val stack by rememberUpdatedState(stackData)
     val connections by database.couchTrackerConnectionQueries.all()
         .asFlow()
         .mapToList(Dispatchers.Default)
         .collectAsState(emptyList())
 
     MaterialTheme(
-        colors = CouchTrackerStyle.colors,
+        colors = CouchTrackerStyle.darkColors,
         shapes = CouchTrackerStyle.shapes,
     ) {
-        MainLayout(
-            connections,
-            addConnection = { editStack(stack.push(AddConnection)) }
-        ) {
-            StackNavigation(
-                stackData,
-                {//TODO: this isn't right
-                    if (stack.contains(it) && stack.canPop()) {
-                        editStack(stack.pop(it))
-                        true
-                    } else false
-                },
-                { destination, w, h ->
-                    AppDestinationData(
-                        opaque = destination != AddConnection || w < 640.dp || h < 640.dp,
-                    )
-                },
-            ) { l, state ->
-
-                val navigationData = NavigationData(
-                    state = state,
-                    goBackOrClose = {
-                        if (stack.canPop()) editStack(stack.pop())
-                        else close()
+        CompositionLocalProvider(LocalImageLoader provides generateImageLoader()) {
+            val stack by rememberUpdatedState(stackData)
+            BoxWithConstraints {
+                val stackState = rememberStackState(
+                    stack, {
+                        if (stack.contains(it) && stack.canPop()) {
+                            editStack(stack.pop(it))
+                            true
+                        } else false
+                    }, { destination ->
+                        destination == AddConnectionLocation && maxWidth >= 640.dp && maxHeight >= 640.dp
                     }
                 )
 
-                when (l) {
-                    Home -> {
-                        Screen(state) {
-                            Column(
-                                Modifier.fillMaxSize().swipeToPop(state),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Spacer(Modifier.weight(1f))
-                                Button({
-                                    editStack(stack.push(Show("tmdb:57243")))
-                                }) {
-                                    Text("Open show")
-                                }
-                                Spacer(Modifier.weight(1f))
-                            }
-                        }
-                    }
-
-                    AddConnection -> {
-                        AddConnection(
-                            Modifier.fillMaxSize(),
-                            navigationData,
-                        ) { login ->
-                            database.couchTrackerConnectionQueries.upsert(
-                                id = login.id,
-                                server = login.server,
-                                accessToken = login.accessToken,
-                                refreshToken = login.refreshToken,
-                            )
-                            editStack(stack.pop(l))
-                        }
-                    }
-
-                    is Show -> {
-                        Screen(state) {
-                            ShowScreen(
-                                Modifier.fillMaxSize(),
-                                navigationData,
-                                id = l.id,
-                            )
-                        }
+                MainLayout(
+                    stackState,
+                    connections,
+                    showPartialDrawer = maxWidth >= 640.dp,
+                    resizeContent = maxWidth >= 960.dp,
+                    addConnection = { editStack(stack.push(AddConnectionLocation)) }
+                ) {
+                    StackNavigationUI(stackState) { location, state ->
+                        location.content(database, stack, state, editStack)
                     }
                 }
             }

@@ -1,13 +1,11 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
-import androidx.compose.ui.unit.Dp
-
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import com.github.couchtracker.jvmclients.common.Location
 
 interface AppDestination
-
-data class AppDestinationData(
-    val opaque: Boolean = true,
-)
 
 data class StackData<T : AppDestination>(
     val stack: List<T> = emptyList(),
@@ -17,6 +15,7 @@ data class StackData<T : AppDestination>(
     }
 
     fun pop() = StackData(stack.dropLast(1))
+    fun popOrNull() = if (canPop()) pop() else null
     fun pop(item: T): StackData<T> {
         return StackData(stack.minus(item))
     }
@@ -40,15 +39,21 @@ data class StackData<T : AppDestination>(
     }
 }
 
-fun <T : AppDestination> List<Map.Entry<T, ItemAnimatableState>>.visible(
-    w: Dp, h: Dp,
-    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData,
-): List<Map.Entry<T, ItemAnimatableState>> {
+@Composable
+fun <T : AppDestination> ((StackData<T>?) -> Unit).popOrNull(stackData: StackData<T>): () -> Unit {
+    return {
+        this(stackData.popOrNull())
+    }
+}
+
+fun <T : AppDestination> List<Pair<T, ItemAnimatableState>>.visible(
+    canSeeBehind: (T) -> Boolean,
+): List<Pair<T, ItemAnimatableState>> {
     return drop(
         withIndex()
             .indexOfLast { (index, element) ->
                 // Element on top is never considered opaque, so animations are smooth the in disappears
-                index < size - 1 && element.value.opaque(dataProvider(element.key, w, h))
+                index < size - 1 && !canSeeBehind(element.first) && !element.second.isAnimating
             }.coerceAtLeast(0)
     )
 }

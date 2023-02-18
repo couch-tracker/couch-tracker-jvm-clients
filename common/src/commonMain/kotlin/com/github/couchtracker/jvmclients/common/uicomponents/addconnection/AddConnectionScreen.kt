@@ -9,13 +9,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
+import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.*
-import com.github.couchtracker.jvmclients.common.uicomponents.NavigationData
 import com.github.couchtracker.jvmclients.common.uicomponents.ScreenOrPopup
 import com.github.couchtracker.jvmclients.common.uicomponents.TopAppBar
+
+object AddConnectionLocation : Location() {
+    @Composable
+    override fun title() {
+        Text("Add connection")
+    }
+
+    @Composable
+    override fun background() {
+    }
+
+    @Composable
+    override fun content(
+        database: Database,
+        stackData: StackData<Location>,
+        state: ItemAnimatableState,
+        editStack: (StackData<Location>?) -> Unit
+    ) {
+        AddConnectionScreen(database, stackData, state, editStack)
+    }
+}
 
 object AddConnectionStyle {
 
@@ -75,16 +96,18 @@ sealed interface AddConnectionState : AppDestination {
 }
 
 @Composable
-fun AddConnection(
-    modifier: Modifier,
-    navigationData: NavigationData,
-    addConnection: (CouchTrackerConnection) -> Unit,
+fun AddConnectionScreen(
+    database: Database,
+    stackData: StackData<Location>,
+    state: ItemAnimatableState,
+    editStack: (StackData<Location>?) -> Unit,
 ) {
+    val goBackOrClose = editStack.popOrNull(stackData)
     var stack by remember { mutableStateOf(StackData.of<AddConnectionState>(AddConnectionState.ChooseServerState)) }
 
-    ScreenOrPopup(navigationData.state, navigationData.goBackOrClose, modifier) { fill ->
+    ScreenOrPopup(state, goBackOrClose) { fill, width, height ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
-            TopAppBar({ Text("Add connection") }, navigationData)
+            TopAppBar({ Text("Add connection") }, state, goBackOrClose, width, height)
             StackNavigation(
                 stack,
                 {
@@ -93,21 +116,29 @@ fun AddConnection(
                         true
                     } else false
                 },
-                modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),//TODO: .animateContentSize(),
-            ) { destination, state ->
-                Surface(modifier = Modifier.slideAnimation(state), color = MaterialTheme.colors.background) {
+                modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),
+            ) { destination, childState ->
+                Surface(modifier = Modifier.slideAnimation(childState, width), color = MaterialTheme.colors.background) {
                     when (destination) {
                         AddConnectionState.ChooseServerState -> ChooseServer(
-                            Modifier.swipeToPop(navigationData.state),
+                            Modifier.swipeToPop(state, width, height),
                         ) {
                             stack = stack.push(it)
                         }
 
                         is AddConnectionState.LoginState -> Login(
-                            Modifier.swipeToPop(state, horizontal = true, vertical = false),
+                            Modifier.swipeToPop(childState, width, height, horizontal = true, vertical = false),
                             { stack = stack.pop(destination) },
                             destination.server,
-                            addConnection,
+                            { connection ->
+                                database.couchTrackerConnectionQueries.upsert(
+                                    id = connection.id,
+                                    server = connection.server,
+                                    accessToken = connection.accessToken,
+                                    refreshToken = connection.refreshToken,
+                                )
+                                goBackOrClose()
+                            },
                         )
                     }
                 }

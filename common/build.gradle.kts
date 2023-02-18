@@ -19,7 +19,6 @@ kotlin {
     sourceSets {
         val ktorVersion = "2.2.3"
         val sqldelightVersion = "2.0.0-alpha05"
-        val accompanistVersion = "0.28.0"
         val commonMain by getting {
             dependencies {
                 api(compose.runtime)
@@ -36,6 +35,8 @@ kotlin {
 
                 implementation("app.cash.sqldelight:primitive-adapters:$sqldelightVersion")
                 implementation("app.cash.sqldelight:coroutines-extensions:$sqldelightVersion")
+
+                api("io.github.qdsfdhvh:image-loader:1.2.9")
             }
         }
         val commonTest by getting {

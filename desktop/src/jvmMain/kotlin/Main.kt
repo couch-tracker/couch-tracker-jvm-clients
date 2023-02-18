@@ -10,6 +10,7 @@ import com.github.couchtracker.jvmclients.common.App
 import com.github.couchtracker.jvmclients.common.DriverFactory
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.navigation.StackData
+import com.github.couchtracker.jvmclients.common.uicomponents.HomeLocation
 
 
 fun main() {
@@ -19,11 +20,13 @@ fun main() {
             state = WindowState(width = 1080.dp, height = 800.dp),
             onCloseRequest = ::exitApplication,
         ) {
-            var stackData by remember { mutableStateOf(StackData.of<Location>(Location.Home)) }
+            var stackData by remember { mutableStateOf(StackData.of<Location>(HomeLocation)) }
             App(
                 driver, stackData,
-                close = ::exitApplication,
-                editStack = { stackData = it }
+                editStack = {
+                    if (it == null) exitApplication()
+                    else stackData = it
+                }
             )
         }
     }

@@ -12,18 +12,19 @@ import androidx.compose.ui.unit.Dp
 @Composable
 fun Modifier.swipeToPop(
     state: ItemAnimatableState,
+    screenWidth: Dp,screenHeight: Dp,
     vertical: Boolean = true,
     horizontal: Boolean = false,
 ): Modifier {
     var ret = this
     if (horizontal) {
         ret = ret.createSwipeable(
-            state.canPop, state.width, state.horizontalSwipe, Orientation.Horizontal
+            state.canPop, screenWidth, state.horizontalSwipe, Orientation.Horizontal
         )
     }
     if (vertical) {
         ret = ret.createSwipeable(
-            state.canPop, state.height, state.verticalSwipe, Orientation.Vertical, true
+            state.canPop, screenHeight, state.verticalSwipe, Orientation.Vertical, true
         )
     }
     return ret

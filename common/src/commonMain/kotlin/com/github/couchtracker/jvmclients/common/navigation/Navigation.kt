@@ -1,31 +1,32 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.material.SwipeableDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
+
 @Composable
-fun <T : AppDestination> StackNavigation(
+fun <T : AppDestination> rememberStackState(
     stack: StackData<T>,
-    dismiss: (T) -> Boolean,
-    dataProvider: (T, w: Dp, h: Dp) -> AppDestinationData = { _, _, _ ->
-        AppDestinationData()
-    },
-    modifier: Modifier = Modifier,
-    composable: @Composable (BoxScope.(T, state: ItemAnimatableState) -> Unit),
-) {
+    dismiss: (T) -> Boolean, canSeeBehind: (T) -> Boolean = { false },
+    animationSpec: AnimationSpec<Float> = tween(450),
+    manualAnimationSpec: AnimationSpec<Float> = SpringSpec(stiffness = Spring.StiffnessLow),
+): List<Pair<T, ItemAnimatableState>> {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
     var itemStates: Map<T, ItemAnimatableState> by remember {
         mutableStateOf(stack.stack.withIndex().associate { (index, it) ->
-            it to ItemAnimatableState(index) { state ->
+            it to ItemAnimatableState(index, manualAnimationSpec) { state ->
                 if (!state) dismiss(it)
                 else true
             }
@@ -47,14 +48,14 @@ fun <T : AppDestination> StackNavigation(
                     val state = itemStates.getValue(pt)
                     if (pt !in newIndex) {
                         thingsGoingOn += launch {
-                            state.transitionState.animateTo(0f)
+                            state.transitionState.animateTo(0f, animationSpec)
                             itemStates = itemStates.minus(pt)
                         }
                     }
                 }
                 newTarget.forEach { nt ->
                     val ni = newIndex.getValue(nt)
-                    val state = itemStates[nt] ?: ItemAnimatableState(ni, false) { state ->
+                    val state = itemStates[nt] ?: ItemAnimatableState(ni, manualAnimationSpec, false) { state ->
                         if (!state) dismiss(nt)
                         else true
                     }
@@ -63,12 +64,12 @@ fun <T : AppDestination> StackNavigation(
                     }
                     if (state.zIndex.targetValue != ni.toFloat()) {
                         thingsGoingOn += launch {
-                            state.zIndex.animateTo(ni.toFloat())
+                            state.zIndex.animateTo(ni.toFloat(), animationSpec)
                         }
                     }
                     if (state.transitionState.targetValue != 1f) {
                         thingsGoingOn += launch {
-                            state.transitionState.animateTo(1f)
+                            state.transitionState.animateTo(1f, animationSpec)
                         }
                     }
                 }
@@ -77,41 +78,63 @@ fun <T : AppDestination> StackNavigation(
             }
         }
     }
-    BoxWithConstraints {
-        val w = this.maxWidth
-        val wPx = with(LocalDensity.current) { w.toPx() }
-        val h = this.maxHeight
-        val hPx = with(LocalDensity.current) { h.toPx() }
-        val sortedStates = itemStates
-            .entries
-            .sortedBy { it.value.zIndex.value }
+    val sortedStates = itemStates
+        .entries
+        .sortedBy { it.value.zIndex.value }
+        .map { it.key to it.value }
 
 
-        val visible = sortedStates.visible(w, h, dataProvider)
-        val hasDroppedSomething = visible.size != itemStates.size
+    val visible = sortedStates.visible(canSeeBehind)
+    val hasDroppedSomething = visible.size != itemStates.size
 
-        Box(modifier) {
-            if (visible.isNotEmpty()) {
-                val topMostVisibility = visible.last().value.visibility(wPx, hPx)
-                visible.forEachIndexed { index, (destination, state) ->
-                    val canPop = hasDroppedSomething || index > 0
-                    val data = dataProvider(destination, w, h)
-                    val isTopOfStack = index == visible.size - 1
-
-                    key(destination) {
-                        Box(Modifier) {
-                            state.width = w
-                            state.height = h
-                            state.canPop = canPop
-                            state.isOpaque = data.opaque
-                            state.isOnTop = isTopOfStack
-                            // TODO: compute visibility of all items on top, and not just the topmost
-                            state.topItemsVisibility = if (isTopOfStack) 0f else topMostVisibility
-                            composable(destination, state)
-                        }
-                    }
+    if (visible.isNotEmpty()) {
+        visible.forEachIndexed { index, (destination, state) ->
+            val onTop = visible.subList(index + 1, visible.size)
+            state.itemsOnTopCanSeeBehind = onTop.isNotEmpty() && onTop.all { canSeeBehind(it.first) }
+            state.canPop = hasDroppedSomething || index > 0
+            state.isOpaque = !canSeeBehind(destination)
+            state.isOnTop = onTop.isEmpty()
+            state.topItemsVisibility = {
+                onTop.fold(0f) { acc, it ->
+                    1 - (1 - acc) * (1 - it.second.visibility())
                 }
             }
         }
     }
+    return visible
+}
+
+@Composable
+fun <T : AppDestination> StackNavigationUI(
+    items: List<Pair<T, ItemAnimatableState>>,
+    modifier: Modifier = Modifier,
+    composable: @Composable (BoxScope.(T, state: ItemAnimatableState) -> Unit),
+) {
+    Box(modifier) {
+        items.forEach { (destination, state) ->
+            key(destination) {
+                composable(destination, state)
+            }
+        }
+    }
+}
+
+@Composable
+fun <T : AppDestination> StackNavigation(
+    stack: StackData<T>,
+    dismiss: (T) -> Boolean,
+    canSeeBehind: (T) -> Boolean = { false },
+    animationSpec: AnimationSpec<Float> = tween(450),
+    manualAnimationSpec: AnimationSpec<Float> = SwipeableDefaults.AnimationSpec,
+    modifier: Modifier = Modifier,
+    composable: @Composable (BoxScope.(T, state: ItemAnimatableState) -> Unit),
+) {
+    val items = rememberStackState(
+        stack,
+        dismiss,
+        canSeeBehind,
+        animationSpec,
+        manualAnimationSpec
+    )
+    StackNavigationUI(items, modifier, composable)
 }
