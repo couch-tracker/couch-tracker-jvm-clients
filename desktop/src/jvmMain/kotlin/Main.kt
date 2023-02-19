@@ -1,5 +1,3 @@
-import androidx.compose.material.Button
-import androidx.compose.material.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,7 +10,7 @@ import com.github.couchtracker.jvmclients.common.App
 import com.github.couchtracker.jvmclients.common.DriverFactory
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.navigation.StackData
-import com.github.couchtracker.jvmclients.common.uicomponents.HomeLocation
+import com.github.couchtracker.jvmclients.common.ui.screen.HomeLocation
 
 
 fun main() {

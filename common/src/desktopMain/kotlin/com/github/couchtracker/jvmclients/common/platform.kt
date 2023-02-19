@@ -53,6 +53,6 @@ actual fun generateImageLoader(): ImageLoader {
 }
 
 @Composable
-actual fun Modifier.systemBarsPadding(): Modifier {
+actual fun Modifier.multiplatformSystemBarsPadding(): Modifier {
     return this
 }

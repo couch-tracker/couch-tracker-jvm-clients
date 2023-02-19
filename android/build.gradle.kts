@@ -14,6 +14,8 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation("androidx.activity:activity-compose:1.6.1")
+    // Logging TODO: this is not working...
+    implementation("org.slf4j:slf4j-android:1.7.36")
 }
 
 android {

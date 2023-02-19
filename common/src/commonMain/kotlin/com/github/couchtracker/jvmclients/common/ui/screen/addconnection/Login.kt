@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalAnimationApi::class)
 
-package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
+package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
@@ -22,14 +22,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
+import com.github.couchtracker.jvmclients.common.data.api.AuthenticationInfo
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
 import io.ktor.http.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.mapLatest
+import mu.KotlinLogging
 
 private sealed interface LoginState {
 
@@ -69,16 +71,18 @@ private sealed interface LoginState {
     data class Ok(
         override val login: String,
         override val password: String,
-        val connection: CouchTrackerConnection,
+        val authenticationInfo: AuthenticationInfo,
     ) : LoginState
 }
+
+private val logger = KotlinLogging.logger("Login")
 
 @Composable
 fun Login(
     modifier: Modifier,
     back: () -> Unit,
     server: CouchTrackerServer,
-    onLogin: (CouchTrackerConnection) -> Unit,
+    onLogin: (CouchTrackerServer, AuthenticationInfo) -> Unit,
 ) {
     var state by remember { mutableStateOf<LoginState>(LoginState.Initial()) }
     val stateTransition = updateTransition(targetState = state)
@@ -87,10 +91,12 @@ fun Login(
         it.mapLatest { ls ->
             if (ls is LoginState.Loading) {
                 try {
-                    val conn = server.login(ls.login, ls.password)
-                    LoginState.Ok(ls.login, ls.password, conn)
+                    val authenticationInfo = server.login(ls.login, ls.password)
+                    LoginState.Ok(ls.login, ls.password, authenticationInfo)
                 } catch (e: Exception) {
-                    e.printStackTrace() // TODO: handle errors
+                    if (e !is CancellationException) {
+                        logger.error(e) { "Error logging into server '${server.address}' with login '${ls.login}'" }
+                    }
                     LoginState.Error(ls.login, ls.password, e)
                 }
             } else null
@@ -100,7 +106,7 @@ fun Login(
         stateFlow.collectLatest { s ->
             if (s != null && s.login == state.login && s.password == state.password) {
                 if (s is LoginState.Ok) {
-                    onLogin(s.connection)
+                    onLogin(server, s.authenticationInfo)
                 } else {
                     state = s
                 }

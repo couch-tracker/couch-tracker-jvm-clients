@@ -1,10 +1,9 @@
 @file:OptIn(ExperimentalMaterialApi::class)
 
-package com.github.couchtracker.jvmclients.common.uicomponents
+package com.github.couchtracker.jvmclients.common.ui.component
 
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
@@ -23,20 +22,16 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
-import com.github.couchtracker.jvmclients.common.Location
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.*
+import com.github.couchtracker.jvmclients.common.data.*
+import com.github.couchtracker.jvmclients.common.data.api.User
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigationUI
 import com.github.couchtracker.jvmclients.common.navigation.crossFade
-import com.github.couchtracker.jvmclients.common.systemBarsPadding
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -47,32 +42,21 @@ private val drawerExpandedWidth = DRAWER_DEFAULT_WIDTH
 @Composable
 fun MainLayout(
     stackState: List<Pair<Location, ItemAnimatableState>>,
-    connections: List<CouchTrackerConnection>,
     showPartialDrawer: Boolean,
     resizeContent: Boolean,
     addConnection: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val cs = rememberCoroutineScope()
-    var forceOpen by remember { mutableStateOf(false) }
-    val drawerRevealed = remember {
-        SwipeableState(
-            false,
-            confirmStateChange = {
-                forceOpen = it
-                true
-            }
-        )
-    }
+    val preferOpenDrawer = showPartialDrawer && resizeContent
+    val drawerRevealed = remember { SwipeableState(preferOpenDrawer) }
 
-    fun openDrawer(force: Boolean = false) {
-        if (force) forceOpen = true
+    fun openDrawer() {
         cs.launch { drawerRevealed.animateTo(true) }
     }
 
-    fun closeDrawer(force: Boolean = false) {
-        if (force) forceOpen = false
-        if (!forceOpen) {
+    fun closeDrawer(force: Boolean) {
+        if (force || !preferOpenDrawer) {
             cs.launch { drawerRevealed.animateTo(false) }
         }
     }
@@ -83,37 +67,21 @@ fun MainLayout(
         val basePadding = if (showPartialDrawer) 16.dp else 8.dp
         val drawerInitialVisibility = if (showPartialDrawer) drawerCollapsedWidth else basePadding
         val drawerInitialVisibilityPx = with(LocalDensity.current) { drawerInitialVisibility.toPx() }
-        Column(Modifier.systemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
+        Column(Modifier.multiplatformSystemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
             MainTopAppBar(drawerRevealed, stackState) {
                 if (drawerRevealed.targetValue) closeDrawer(true)
-                else openDrawer(true)
+                else openDrawer()
             }
             Box {
                 MainDrawer(
                     Modifier
                         .width(DRAWER_DEFAULT_WIDTH).fillMaxHeight()
                         .align(Alignment.CenterStart)
-                        .swipeForDrawer(drawerRevealed, drawerInitialVisibility)
-                        .then(if (showPartialDrawer) {
-                            Modifier.pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val event = awaitPointerEvent(PointerEventPass.Main)
-                                        when (event.type) {
-                                            PointerEventType.Enter -> openDrawer()
-                                            PointerEventType.Exit -> closeDrawer()
-                                        }
-                                    }
-                                }
-                            }
-                        } else Modifier),
-                    connections,
+                        .swipeForDrawer(drawerRevealed, drawerInitialVisibility),
                     visibleWidth = { drawerInitialVisibilityPx + drawerRevealed.offset.value },
                 ) {
                     addConnection()
-                    if (!showPartialDrawer) {
-                        closeDrawer(true)
-                    }
+                    closeDrawer(false)
                 }
                 val alpha by animateFloatAsState(
                     targetValue = if (drawerRevealed.targetValue && !resizeContent) 0.6f else 1f,
@@ -190,10 +158,11 @@ private fun MainTopAppBar(
 @Composable
 private fun MainDrawer(
     modifier: Modifier = Modifier,
-    connections: List<CouchTrackerConnection>,
     visibleWidth: () -> Float,
     addConnection: () -> Unit,
 ) {
+    val portals = LocalDataPortals.current
+
     LazyColumn(modifier
         .drawWithContent {
             val cds = this
@@ -201,12 +170,24 @@ private fun MainDrawer(
                 cds.drawContent()
             }
         }) {
-        items(connections) { conn ->
+        items(portals.portals) { portal ->
+            val user: CachedValue<User> by remember {
+                // TODO it should be the portal that remembers
+                portal.user(portal.connection.userId)
+            }.collectAsState(CachedValue.Loading)
             ListItem(
                 icon = { Icon(Icons.Default.AccountCircle, null) },
-                text = { Text(conn.id) },
+                text = {
+                    Text(
+                        when (val u = user) {
+                            is CachedValue.Loading -> "Loading..."
+                            is CachedValue.Error -> "Error: ${u.error.message}"
+                            is CachedValue.Loaded -> u.data.username
+                        }
+                    )
+                },
                 secondaryText = {
-                    Text(conn.server.address, maxLines = 1, softWrap = false)
+                    Text(portal.connection.server.address, maxLines = 1, softWrap = false)
                 }
             )
         }

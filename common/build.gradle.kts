@@ -25,18 +25,23 @@ kotlin {
                 api(compose.foundation)
                 api(compose.material)
                 api(compose.materialIconsExtended)
-
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
+                // HTTP client
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-
+                implementation("io.ktor:ktor-client-auth:$ktorVersion")
+                // Database
                 implementation("app.cash.sqldelight:primitive-adapters:$sqldelightVersion")
                 implementation("app.cash.sqldelight:coroutines-extensions:$sqldelightVersion")
-
-                api("io.github.qdsfdhvh:image-loader:1.2.9")
+                implementation("app.cash.sqldelight:async-extensions:$sqldelightVersion")
+                // Images
+                implementation("io.github.qdsfdhvh:image-loader:1.2.9")
+                // Logging
+                implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
             }
         }
         val commonTest by getting {
@@ -48,6 +53,7 @@ kotlin {
             dependencies {
                 api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.9.0")
+                // Database
                 implementation("app.cash.sqldelight:android-driver:$sqldelightVersion")
             }
         }
@@ -59,7 +65,9 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 api(compose.preview)
+                // Database
                 implementation("app.cash.sqldelight:sqlite-driver:$sqldelightVersion")
+                // Cross-platform directory
                 implementation("net.harawata:appdirs:1.2.1")
             }
         }

@@ -20,6 +20,8 @@ kotlin {
             dependencies {
                 implementation(project(":common"))
                 implementation(compose.desktop.currentOs)
+                // Logging
+                implementation("ch.qos.logback:logback-classic:1.4.5")
             }
         }
         val jvmTest by getting

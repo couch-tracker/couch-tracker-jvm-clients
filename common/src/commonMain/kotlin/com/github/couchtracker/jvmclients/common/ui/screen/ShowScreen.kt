@@ -1,27 +1,23 @@
 @file:OptIn(ExperimentalMaterialApi::class)
 
-package com.github.couchtracker.jvmclients.common.uicomponents
+package com.github.couchtracker.jvmclients.common.ui.screen
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.*
-import com.seiko.imageloader.ImageRequestState
-import com.seiko.imageloader.model.ImageRequest
+import com.github.couchtracker.jvmclients.common.ui.component.FadeInImage
+import com.github.couchtracker.jvmclients.common.ui.component.ScreenCard
+import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
 import com.seiko.imageloader.rememberAsyncImagePainter
 
 
@@ -40,15 +36,7 @@ data class ShowLocation(val id: String) : Location() {
             "https://www.themoviedb.org/t/p/original/wmF2N0mZT9pLHJB8w2Rocfq80j2.jpg",
             contentScale = ContentScale.Crop
         )
-        Crossfade(painter.requestState) {
-            if (it is ImageRequestState.Success) {
-                Image(
-                    painter, null,
-                    Modifier.fillMaxSize().alpha(0.4f).blur(8.dp),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
+        FadeInImage(painter, Modifier.fillMaxSize().alpha(0.4f).blur(8.dp))
     }
 
     @Composable
@@ -70,6 +58,17 @@ fun ShowScreen(
     editStack: (StackData<Location>?) -> Unit,
     id: String,
 ) {
+    val activePortal = LocalDataPortals.current.active
+    LaunchedEffect(id, activePortal) {
+        if (activePortal != null) {
+            try {
+                println(activePortal.show(id))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     BoxWithConstraints {
         val width = maxWidth
         val height = maxHeight

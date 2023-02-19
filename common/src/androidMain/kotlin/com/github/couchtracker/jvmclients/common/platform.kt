@@ -12,7 +12,6 @@ import com.seiko.imageloader.ImageLoader
 import com.seiko.imageloader.cache.memory.maxSizePercent
 import com.seiko.imageloader.component.setupDefaultComponents
 import okio.Path.Companion.toOkioPath
-import java.io.File
 
 actual class DriverFactory(private val context: Context) {
     actual fun createDriver(): SqlDriver {
@@ -42,6 +41,6 @@ actual fun generateImageLoader(): ImageLoader {
 }
 
 @Composable
-actual fun Modifier.systemBarsPadding(): Modifier {
+actual fun Modifier.multiplatformSystemBarsPadding(): Modifier {
     return systemBarsPadding()
 }

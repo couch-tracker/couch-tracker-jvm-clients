@@ -15,4 +15,4 @@ expect fun hasBackButton(): Boolean
 expect fun generateImageLoader(): ImageLoader
 
 @Composable
-expect fun Modifier.systemBarsPadding(): Modifier
+expect fun Modifier.multiplatformSystemBarsPadding(): Modifier

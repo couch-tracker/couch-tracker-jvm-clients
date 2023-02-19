@@ -13,7 +13,7 @@ import com.github.couchtracker.jvmclients.common.App
 import com.github.couchtracker.jvmclients.common.DriverFactory
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.navigation.StackData
-import com.github.couchtracker.jvmclients.common.uicomponents.HomeLocation
+import com.github.couchtracker.jvmclients.common.ui.screen.HomeLocation
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

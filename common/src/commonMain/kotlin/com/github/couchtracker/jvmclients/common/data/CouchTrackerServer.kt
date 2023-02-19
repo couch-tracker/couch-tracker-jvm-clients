@@ -1,61 +1,54 @@
 package com.github.couchtracker.jvmclients.common.data
 
-import app.cash.sqldelight.ColumnAdapter
-import io.ktor.client.*
+import com.github.couchtracker.jvmclients.common.data.api.AuthenticationInfo
+import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
+@Serializable(with = CouchTrackerServerSerializer::class)
 data class CouchTrackerServer(
     val address: String,
 ) {
+    private val client by lazy { couchTrackerHttpClient(this) }
+
     suspend fun info(): CouchTrackerServerInfo {
         return client.get("$address/api").body()
     }
 
-    suspend fun login(login: String, password: String): CouchTrackerConnection {
+    suspend fun login(login: String, password: String): AuthenticationInfo {
         @Serializable
         data class LoginRequest(val login: String, val password: String)
 
-        @Serializable
-        data class LoginResponse(val token: String, val refreshToken: String)
-
-        val accessInfo = client.post("$address/api/auth/login") {
+        return client.post("auth/login") {
             contentType(ContentType.Application.Json)
             setBody(LoginRequest(login, password))
-        }.body<LoginResponse>()
-        return CouchTrackerConnection(
-            this, login, accessInfo.token, accessInfo.refreshToken
-        )
+        }.body()
     }
 
-    companion object {
-        private val client = HttpClient(CIO) {
-            expectSuccess = true
-            install(ContentNegotiation) {
-                json()
+    suspend fun refreshToken(refreshToken: String): AuthenticationInfo {
+        return client.post("auth/refresh") {
+            headers {
+                bearerAuth(refreshToken)
             }
-        }
-        val dbAdapter = object : ColumnAdapter<CouchTrackerServer, String> {
-            override fun decode(databaseValue: String) = CouchTrackerServer(databaseValue)
-            override fun encode(value: CouchTrackerServer) = value.address
-        }
+        }.body()
     }
 }
 
-@Serializable
-data class CouchTrackerServerInfo(
-    val version: Int,
-    val patch: Int,
-    val name: String,
-) {
-    init {
-        require(name == "couch-tracker")
-        require(version > 0)
-        require(patch >= 0)
+class CouchTrackerServerSerializer : KSerializer<CouchTrackerServer> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("CouchTrackerServer", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: CouchTrackerServer) {
+        return encoder.encodeString(value.address)
+    }
+
+    override fun deserialize(decoder: Decoder): CouchTrackerServer {
+        return CouchTrackerServer(decoder.decodeString())
     }
 }

@@ -1,4 +1,4 @@
-package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
+package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -10,12 +10,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.Location
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.data.Database
+import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.navigation.*
-import com.github.couchtracker.jvmclients.common.uicomponents.ScreenOrPopup
-import com.github.couchtracker.jvmclients.common.uicomponents.TopAppBar
+import com.github.couchtracker.jvmclients.common.ui.component.ScreenOrPopup
+import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
+import kotlinx.datetime.Clock
 
 object AddConnectionLocation : Location() {
     override val title = "Add connection"
@@ -134,12 +136,15 @@ fun AddConnectionScreen(
                             Modifier.swipeToPop(childState, width, height, horizontal = true, vertical = false),
                             { stack = stack.pop(destination) },
                             destination.server,
-                            { connection ->
-                                database.couchTrackerConnectionQueries.upsert(
-                                    id = connection.id,
-                                    server = connection.server,
-                                    accessToken = connection.accessToken,
-                                    refreshToken = connection.refreshToken,
+                            { server, authenticationInfo ->
+                                val connection = CouchTrackerConnection(server, authenticationInfo.user.id)
+                                database.userCacheQueries.upsert(
+                                    authenticationInfo.user, Clock.System.now(), connection, authenticationInfo.user.id
+                                )
+                                database.couchTrackerCredentialsQueries.upsert(
+                                    connection = connection,
+                                    accessToken = authenticationInfo.accessToken,
+                                    refreshToken = authenticationInfo.refreshToken,
                                 )
                                 goBackOrClose()
                             },

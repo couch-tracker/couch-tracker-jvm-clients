@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalAnimationApi::class)
 
-package com.github.couchtracker.jvmclients.common.uicomponents.addconnection
+package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
@@ -22,11 +22,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
-import com.github.couchtracker.jvmclients.common.data.CouchTrackerServerInfo
+import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
 import io.ktor.client.plugins.*
+import io.ktor.util.logging.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.mapLatest
+import mu.KotlinLogging
 import java.net.ConnectException
 import java.nio.channels.UnresolvedAddressException
 
@@ -47,6 +50,8 @@ private sealed interface ServerState {
     }
 }
 
+private val logger = KotlinLogging.logger("ChooseServer")
+
 @Composable
 fun ChooseServer(
     modifier: Modifier,
@@ -64,7 +69,9 @@ fun ChooseServer(
                     delay(250)
                     ServerState.Ok(server, server.info())
                 } catch (e: Exception) {
-                    e.printStackTrace() // TODO: handle errors
+                    if (e !is CancellationException) {
+                        logger.error(e) { "Error connecting to server '${server.address}'" }
+                    }
                     ServerState.Error(server, e)
                 }
             }
@@ -81,7 +88,7 @@ fun ChooseServer(
 
         AddConnectionStyle.BoxElement {
             Column {
-                Text("Couch Tracker is a decentralized service", style = MaterialTheme.typography.body1)
+                Text("Couch Tracker is a self-hosted service", style = MaterialTheme.typography.body1)
                 Spacer(Modifier.height(8.dp))
                 Text("To which server do you want to connect?", style = MaterialTheme.typography.body2)
             }

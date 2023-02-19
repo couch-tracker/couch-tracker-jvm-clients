@@ -1,4 +1,4 @@
-package com.github.couchtracker.jvmclients.common.uicomponents
+package com.github.couchtracker.jvmclients.common.ui.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,8 +12,8 @@ import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackData
-import com.github.couchtracker.jvmclients.common.navigation.popOrNull
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
+import com.github.couchtracker.jvmclients.common.ui.component.Screen
 
 object HomeLocation : Location() {
 

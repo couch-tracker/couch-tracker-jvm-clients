@@ -1,0 +1,23 @@
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection;
+import com.github.couchtracker.jvmclients.common.data.api.User;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE UserCache (
+  connection TEXT AS CouchTrackerConnection NOT NULL,
+  id TEXT NOT NULL,
+  downloadTime TEXT AS Instant NOT NULL,
+  user TEXT AS User NOT NULL,
+  UNIQUE(connection, id)
+);
+
+get:
+SELECT * FROM UserCache WHERE connection=:connection AND id=:id;
+
+upsert {
+  UPDATE UserCache
+  SET user = :user, downloadTime = :downloadTime
+  WHERE connection=:connection AND id=:id;
+
+  INSERT OR IGNORE INTO UserCache(connection, id, downloadTime, user)
+  VALUES (:connection,:id, :downloadTime, :user);
+}
