@@ -1,5 +1,3 @@
-import org.jetbrains.compose.compose
-
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
@@ -16,6 +14,7 @@ kotlin {
     jvm("desktop") {
         jvmToolchain(11)
     }
+    @Suppress("UnusedPrivateMember")
     sourceSets {
         val ktorVersion = "2.2.3"
         val sqldelightVersion = "2.0.0-alpha05"

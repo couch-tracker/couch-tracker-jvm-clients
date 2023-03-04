@@ -1,36 +1,37 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.material.SwipeableDefaults
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun <T : AppDestination> rememberStackState(
     stack: StackData<T>,
-    dismiss: (T) -> Boolean, canSeeBehind: (T) -> Boolean = { false },
+    dismiss: (T) -> Boolean,
+    canSeeBehind: (T) -> Boolean = { false },
     animationSpec: AnimationSpec<Float> = tween(450),
     manualAnimationSpec: AnimationSpec<Float> = SpringSpec(stiffness = Spring.StiffnessLow),
 ): List<Pair<T, ItemAnimatableState>> {
     val channel = remember { Channel<List<T>>(Channel.CONFLATED) }
     SideEffect { channel.trySend(stack.stack) }
     var itemStates: Map<T, ItemAnimatableState> by remember {
-        mutableStateOf(stack.stack.withIndex().associate { (index, it) ->
-            it to ItemAnimatableState(index, manualAnimationSpec) { state ->
-                if (!state) dismiss(it)
-                else true
-            }
-        })
+        mutableStateOf(
+            stack.stack.withIndex().associate { (index, it) ->
+                it to ItemAnimatableState(index, manualAnimationSpec) { state ->
+                    if (!state) {
+                        dismiss(it)
+                    } else {
+                        true
+                    }
+                }
+            },
+        )
     }
 
     LaunchedEffect(channel) {
@@ -56,8 +57,11 @@ fun <T : AppDestination> rememberStackState(
                 newTarget.forEach { nt ->
                     val ni = newIndex.getValue(nt)
                     val state = itemStates[nt] ?: ItemAnimatableState(ni, manualAnimationSpec, false) { state ->
-                        if (!state) dismiss(nt)
-                        else true
+                        if (!state) {
+                            dismiss(nt)
+                        } else {
+                            true
+                        }
                     }
                     if (nt !in itemStates) {
                         itemStates = itemStates.plus(nt to state)
@@ -83,7 +87,6 @@ fun <T : AppDestination> rememberStackState(
         .sortedBy { it.value.zIndex.value }
         .map { it.key to it.value }
 
-
     val visible = sortedStates.visible(canSeeBehind)
     val hasDroppedSomething = visible.size != itemStates.size
 
@@ -95,8 +98,8 @@ fun <T : AppDestination> rememberStackState(
             state.isOpaque = !canSeeBehind(destination)
             state.isOnTop = onTop.isEmpty()
             state.topItemsVisibility = {
-                onTop.fold(0f) { acc, it ->
-                    1 - (1 - acc) * (1 - it.second.visibility())
+                onTop.fold(0f) { acc, (_, state) ->
+                    1 - (1 - acc) * (1 - state.visibility())
                 }
             }
         }
@@ -134,7 +137,7 @@ fun <T : AppDestination> StackNavigation(
         dismiss,
         canSeeBehind,
         animationSpec,
-        manualAnimationSpec
+        manualAnimationSpec,
     )
     StackNavigationUI(items, modifier, composable)
 }

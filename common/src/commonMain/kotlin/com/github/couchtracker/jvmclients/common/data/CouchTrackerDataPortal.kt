@@ -7,17 +7,19 @@ import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.github.couchtracker.jvmclients.common.data.api.User
 import com.github.couchtracker.jvmclients.common.utils.elapsedTime
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import mu.KotlinLogging
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.runningFold
-import mu.KotlinLogging
-import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -65,8 +67,8 @@ class CouchTrackerDataPortal(
                         val refreshToken = credentials()?.refreshToken ?: return@refreshTokens null
                         val new = try {
                             connection.server.refreshToken(refreshToken)
-                        } catch (e: Throwable) {
-                            logger.error(e) { "Couldn't refresh access token" }
+                        } catch (expected: Exception) {
+                            logger.error(expected) { "Couldn't refresh access token" }
                             null
                         }
                         if (new == null) {
@@ -74,9 +76,7 @@ class CouchTrackerDataPortal(
                             database.couchTrackerCredentialsQueries.deleteCredentials(connection)
                             null
                         } else {
-                            database.couchTrackerCredentialsQueries.upsert(
-                                new.accessToken, new.refreshToken, connection,
-                            )
+                            database.couchTrackerCredentialsQueries.upsert(new.accessToken, new.refreshToken, connection)
                             BearerTokens(new.accessToken.token, new.refreshToken.token)
                         }
                     }
@@ -90,9 +90,11 @@ class CouchTrackerDataPortal(
             .bearer(connection)
             .awaitAsOneOrNull()
             ?.let {
-                if (it.accessToken != null && it.refreshToken != null)
+                if (it.accessToken != null && it.refreshToken != null) {
                     BearerTokens(it.accessToken.token, it.refreshToken.token)
-                else null
+                } else {
+                    null
+                }
             }
     }
 
@@ -118,7 +120,7 @@ class CouchTrackerDataPortal(
 
     suspend fun show(
         showId: String,
-        locales: List<Locale> = listOf(Locale.ENGLISH)
+        locales: List<Locale> = listOf(Locale.ENGLISH),
     ): ShowBasicInfo {
         // TODO: do it like the user
         return client.get("shows/$showId") {

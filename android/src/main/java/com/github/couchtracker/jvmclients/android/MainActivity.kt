@@ -4,10 +4,7 @@ import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.core.view.WindowCompat
 import com.github.couchtracker.jvmclients.common.App
 import com.github.couchtracker.jvmclients.common.DriverFactory
@@ -21,19 +18,23 @@ class MainActivity : AppCompatActivity() {
         val driver = DriverFactory(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-
             var stackData by remember { mutableStateOf(StackData.of<Location>(HomeLocation)) }
             onBackPressedDispatcher.addCallback(this) {
                 if (stackData.canPop()) {
                     stackData = stackData.pop()
-                } else finish()
+                } else {
+                    finish()
+                }
             }
             App(
-                driver, stackData,
+                driver,
+                stackData,
                 editStack = {
-                    if (it == null) finish()
-                    else stackData = it
-                }
+                    when (it) {
+                        null -> finish()
+                        else -> stackData = it
+                    }
+                },
             )
         }
     }

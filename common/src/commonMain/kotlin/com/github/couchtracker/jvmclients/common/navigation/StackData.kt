@@ -1,9 +1,6 @@
 package com.github.couchtracker.jvmclients.common.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import com.github.couchtracker.jvmclients.common.Location
+import androidx.compose.runtime.*
 
 interface AppDestination
 
@@ -54,6 +51,6 @@ fun <T : AppDestination> List<Pair<T, ItemAnimatableState>>.visible(
             .indexOfLast { (index, element) ->
                 // Element on top is never considered opaque, so animations are smooth the in disappears
                 index < size - 1 && !canSeeBehind(element.first) && !element.second.isAnimating
-            }.coerceAtLeast(0)
+            }.coerceAtLeast(0),
     )
 }

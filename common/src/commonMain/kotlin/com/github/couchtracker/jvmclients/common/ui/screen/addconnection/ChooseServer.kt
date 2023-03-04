@@ -3,36 +3,29 @@
 package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
-import io.ktor.client.plugins.*
-import io.ktor.util.logging.*
-import io.ktor.utils.io.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.mapLatest
+import io.ktor.client.plugins.ClientRequestException
 import mu.KotlinLogging
 import java.net.ConnectException
 import java.nio.channels.UnresolvedAddressException
-
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.mapLatest
 
 private sealed interface ServerState {
     val server: CouchTrackerServer
@@ -68,11 +61,11 @@ fun ChooseServer(
                 try {
                     delay(250)
                     ServerState.Ok(server, server.info())
-                } catch (e: Exception) {
-                    if (e !is CancellationException) {
-                        logger.error(e) { "Error connecting to server '${server.address}'" }
-                    }
-                    ServerState.Error(server, e)
+                } catch (ce: CancellationException) {
+                    ServerState.Error(server, ce)
+                } catch (expected: Exception) {
+                    logger.error(expected) { "Error connecting to server '${server.address}'" }
+                    ServerState.Error(server, expected)
                 }
             }
         }
@@ -83,9 +76,8 @@ fun ChooseServer(
     val serverStateTransition = updateTransition(targetState = serverState)
     Column(
         modifier.fillMaxSize().padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-
         AddConnectionStyle.BoxElement {
             Column {
                 Text("Couch Tracker is a self-hosted service", style = MaterialTheme.typography.body1)
@@ -116,12 +108,14 @@ fun ChooseServer(
                 )
                 serverStateTransition.Crossfade(
                     Modifier.align(Alignment.BottomCenter),
-                    contentKey = { it.javaClass }
+                    contentKey = { it.javaClass },
                 ) { serverState ->
                     when (serverState) {
                         is ServerState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
                         is ServerState.Error -> LinearProgressIndicator(
-                            1f, Modifier.fillMaxWidth(), color = MaterialTheme.colors.error
+                            progress = 1f,
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colors.error,
                         )
 
                         else -> {}
@@ -136,7 +130,9 @@ fun ChooseServer(
         ) { serverState ->
             if (serverState is ServerState.Error) {
                 AddConnectionStyle.ErrorMessage(serverState.errorMessage)
-            } else Spacer(Modifier.fillMaxWidth())
+            } else {
+                Spacer(Modifier.fillMaxWidth())
+            }
         }
         AddConnectionStyle.Element(padding = PaddingValues(32.dp, 0.dp, 32.dp, 16.dp)) {
             val remoteLink = "https://github.com/couch-tracker/couch-tracker-server"
@@ -150,7 +146,8 @@ fun ChooseServer(
             }
             val uriHandler = LocalUriHandler.current
             Text(
-                str, Modifier.clickable { uriHandler.openUri(remoteLink) },
+                text = str,
+                modifier = Modifier.clickable { uriHandler.openUri(remoteLink) },
                 style = MaterialTheme.typography.subtitle2,
             )
         }
@@ -163,7 +160,7 @@ fun ChooseServer(
                     EnterTransition.None with scaleOut()
                 }.using(SizeTransform(clip = false))
             },
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) { serverState ->
             if (serverState is ServerState.Ok) {
                 AddConnectionStyle.Element(contentAlignment = Alignment.Center) {

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName", "Filename")
+
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.runtime.Composable
@@ -14,5 +16,4 @@ expect fun hasBackButton(): Boolean
 @Composable
 expect fun generateImageLoader(): ImageLoader
 
-@Composable
 expect fun Modifier.multiplatformSystemBarsPadding(): Modifier

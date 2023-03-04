@@ -8,7 +8,8 @@ import com.github.couchtracker.jvmclients.common.utils.progress
 
 fun Modifier.stackAnimation(
     state: ItemAnimatableState,
-    width: Dp, height: Dp,
+    width: Dp,
+    height: Dp,
     preferVertical: Boolean = true,
 ): Modifier {
     return graphicsLayer {
@@ -28,7 +29,7 @@ fun Modifier.stackAnimation(
         this.scaleX *= (0.95f..1f).progress(visibilityProgress)
         this.scaleY *= (0.95f..1f).progress(visibilityProgress)
         this.transformOrigin = TransformOrigin(0.5f, 1f)
-        val alphaRange = if(state.itemsOnTopCanSeeBehind) 0.6f..1f else 0f..1f
+        val alphaRange = if (state.itemsOnTopCanSeeBehind) 0.6f..1f else 0f..1f
         this.alpha = alphaRange.progress(focusProgress)
     }
 }
@@ -45,7 +46,10 @@ fun Modifier.slideAnimation(state: ItemAnimatableState, width: Dp): Modifier {
 fun Modifier.crossFade(state: ItemAnimatableState, overlap: Float = 1f): Modifier {
     return graphicsLayer {
         val visibility = state.visibility() * (1 - state.topItemsVisibility())
-        this.alpha = if (visibility > 1 - overlap) (visibility - 1 + overlap) / overlap
-        else 0f
+        this.alpha = if (visibility > 1 - overlap) {
+            (visibility - 1 + overlap) / overlap
+        } else {
+            0f
+        }
     }
 }

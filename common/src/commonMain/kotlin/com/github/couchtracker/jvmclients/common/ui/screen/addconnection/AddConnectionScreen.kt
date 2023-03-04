@@ -1,9 +1,24 @@
 package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,7 +29,13 @@ import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
-import com.github.couchtracker.jvmclients.common.navigation.*
+import com.github.couchtracker.jvmclients.common.navigation.AppDestination
+import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
+import com.github.couchtracker.jvmclients.common.navigation.StackData
+import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
+import com.github.couchtracker.jvmclients.common.navigation.popOrNull
+import com.github.couchtracker.jvmclients.common.navigation.slideAnimation
+import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 import com.github.couchtracker.jvmclients.common.ui.component.ScreenOrPopup
 import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
 import kotlinx.datetime.Clock
@@ -35,7 +56,7 @@ object AddConnectionLocation : Location() {
         database: Database,
         stackData: StackData<Location>,
         state: ItemAnimatableState,
-        editStack: (StackData<Location>?) -> Unit
+        editStack: (StackData<Location>?) -> Unit,
     ) {
         AddConnectionScreen(database, stackData, state, editStack)
     }
@@ -89,7 +110,6 @@ object AddConnectionStyle {
     }
 }
 
-
 sealed interface AddConnectionState : AppDestination {
     object ChooseServerState : AddConnectionState
     data class LoginState(
@@ -117,13 +137,15 @@ fun AddConnectionScreen(
                     if (stack.contains(it)) {
                         stack = stack.pop(it)
                         true
-                    } else false
+                    } else {
+                        false
+                    }
                 },
                 modifier = if (fill) Modifier else Modifier.height(IntrinsicSize.Max),
             ) { destination, childState ->
                 Surface(
                     modifier = Modifier.slideAnimation(childState, width),
-                    color = MaterialTheme.colors.background
+                    color = MaterialTheme.colors.background,
                 ) {
                     when (destination) {
                         AddConnectionState.ChooseServerState -> ChooseServer(
@@ -139,7 +161,10 @@ fun AddConnectionScreen(
                             { server, authenticationInfo ->
                                 val connection = CouchTrackerConnection(server, authenticationInfo.user.id)
                                 database.userCacheQueries.upsert(
-                                    authenticationInfo.user, Clock.System.now(), connection, authenticationInfo.user.id
+                                    user = authenticationInfo.user,
+                                    downloadTime = Clock.System.now(),
+                                    connection = connection,
+                                    id = authenticationInfo.user.id,
                                 )
                                 database.couchTrackerCredentialsQueries.upsert(
                                     connection = connection,

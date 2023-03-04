@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName", "Filename")
+
 package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.runtime.Composable
@@ -16,7 +18,7 @@ actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
         val db = File(
             AppDirsFactory.getInstance().getUserDataDir("couch-tracker", "1.0", null, true),
-            "db.sqlite"
+            "db.sqlite",
         )
         db.parentFile.mkdirs()
         val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:$db")
@@ -29,6 +31,8 @@ actual class DriverFactory {
 
 actual fun hasBackButton(): Boolean = false
 
+private const val MAX_DISK_CACHE_SIZE = 512L * 1024 * 1024
+
 @Composable
 actual fun generateImageLoader(): ImageLoader {
     return ImageLoader {
@@ -37,22 +41,21 @@ actual fun generateImageLoader(): ImageLoader {
         }
         interceptor {
             memoryCacheConfig {
-                maxSizePercent(0.25)
+                maxSizePercent(percent = 0.25)
             }
             diskCacheConfig {
                 val imagesCache = File(
                     AppDirsFactory.getInstance().getUserCacheDir("couch-tracker", "1.0", null),
-                    "images"
+                    "images",
                 )
                 imagesCache.parentFile.mkdirs()
                 directory(imagesCache.toOkioPath())
-                maxSizeBytes(512L * 1024 * 1024)
+                maxSizeBytes(MAX_DISK_CACHE_SIZE)
             }
         }
     }
 }
 
-@Composable
 actual fun Modifier.multiplatformSystemBarsPadding(): Modifier {
     return this
 }

@@ -1,6 +1,6 @@
 package com.github.couchtracker.jvmclients.common.utils
 
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.*
 
 typealias FloatRange = ClosedFloatingPointRange<Float>
 

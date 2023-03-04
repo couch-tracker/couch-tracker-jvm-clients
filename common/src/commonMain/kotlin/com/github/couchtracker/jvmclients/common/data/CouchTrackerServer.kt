@@ -2,9 +2,14 @@ package com.github.couchtracker.jvmclients.common.data
 
 import com.github.couchtracker.jvmclients.common.data.api.AuthenticationInfo
 import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind

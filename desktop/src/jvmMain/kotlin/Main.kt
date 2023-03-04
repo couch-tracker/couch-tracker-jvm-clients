@@ -1,17 +1,11 @@
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
-import androidx.compose.ui.window.application
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.window.*
 import com.github.couchtracker.jvmclients.common.App
 import com.github.couchtracker.jvmclients.common.DriverFactory
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.ui.screen.HomeLocation
-
 
 fun main() {
     val driver = DriverFactory()
@@ -31,10 +25,13 @@ fun main() {
             onCloseRequest = ::exitApplication,
         ) {
             App(
-                driver, stackData,
+                driver,
+                stackData,
                 editStack = {
-                    if (it == null) exitApplication()
-                    else stackData = it
+                    when (it) {
+                        null -> exitApplication()
+                        else -> stackData = it
+                    }
                 },
             )
         }

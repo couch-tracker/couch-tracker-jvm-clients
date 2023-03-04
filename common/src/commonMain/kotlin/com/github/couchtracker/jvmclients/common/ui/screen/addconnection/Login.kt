@@ -1,37 +1,31 @@
-@file:OptIn(ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class, ExperimentalCoroutinesApi::class)
 
 package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.*
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.api.AuthenticationInfo
 import com.github.couchtracker.jvmclients.common.utils.blend
 import com.github.couchtracker.jvmclients.common.utils.rememberStateFlow
-import io.ktor.client.plugins.*
-import io.ktor.http.*
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.HttpStatusCode
+import mu.KotlinLogging
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.mapLatest
-import mu.KotlinLogging
 
 private sealed interface LoginState {
 
@@ -58,10 +52,10 @@ private sealed interface LoginState {
         val error: Exception,
     ) : LoginState {
         val errorMessage = when (error) {
-            is ClientRequestException -> if (error.response.status == HttpStatusCode.Unauthorized) {
-                "Incorrect login and/or password"
-            } else null
-
+            is ClientRequestException -> when (error.response.status) {
+                HttpStatusCode.Unauthorized -> "Incorrect login and/or password"
+                else -> null
+            }
             else -> null
         }
 
@@ -89,17 +83,21 @@ fun Login(
 
     val stateFlow = rememberStateFlow(state) {
         it.mapLatest { ls ->
-            if (ls is LoginState.Loading) {
-                try {
-                    val authenticationInfo = server.login(ls.login, ls.password)
-                    LoginState.Ok(ls.login, ls.password, authenticationInfo)
-                } catch (e: Exception) {
-                    if (e !is CancellationException) {
-                        logger.error(e) { "Error logging into server '${server.address}' with login '${ls.login}'" }
+            when (ls) {
+                is LoginState.Loading -> {
+                    try {
+                        val authenticationInfo = server.login(ls.login, ls.password)
+                        LoginState.Ok(ls.login, ls.password, authenticationInfo)
+                    } catch (ce: CancellationException) {
+                        LoginState.Error(ls.login, ls.password, ce)
+                    } catch (expected: Exception) {
+                        logger.error(expected) { "Error logging into server '${server.address}' with login '${ls.login}'" }
+                        LoginState.Error(ls.login, ls.password, expected)
                     }
-                    LoginState.Error(ls.login, ls.password, e)
                 }
-            } else null
+
+                else -> null
+            }
         }
     }
     LaunchedEffect(Unit) {
@@ -116,7 +114,7 @@ fun Login(
 
     Column(
         modifier.fillMaxSize().padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AddConnectionStyle.BoxElement {
             Text(
@@ -137,7 +135,7 @@ fun Login(
                     isError = state is LoginState.Error,
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
-                        keyboardType = KeyboardType.Email
+                        keyboardType = KeyboardType.Email,
                     ),
                     keyboardActions = KeyboardActions {
                         focusManager.moveFocus(FocusDirection.Down)
@@ -156,13 +154,15 @@ fun Login(
                     label = { Text("Password") },
                     isError = state is LoginState.Error,
                     singleLine = true,
-                    visualTransformation = if (!isPasswordVisible) PasswordVisualTransformation()
-                    else VisualTransformation.None,
+                    visualTransformation = when {
+                        isPasswordVisible -> VisualTransformation.None
+                        else -> PasswordVisualTransformation()
+                    },
                     trailingIcon = {
                         IconButton({ isPasswordVisible = !isPasswordVisible }) {
                             Icon(
                                 if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = "Password Visibility"
+                                contentDescription = "Password Visibility",
                             )
                         }
                     },
@@ -171,7 +171,7 @@ fun Login(
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done,
-                        keyboardType = KeyboardType.Password
+                        keyboardType = KeyboardType.Password,
                     ),
                     shape = MaterialTheme.shapes.medium,
                 )
@@ -184,14 +184,16 @@ fun Login(
         ) { state ->
             if (state is LoginState.Error) {
                 AddConnectionStyle.ErrorMessage(state.errorMessage)
-            } else Spacer(Modifier.fillMaxWidth())
+            } else {
+                Spacer(Modifier.fillMaxWidth())
+            }
         }
         AddConnectionStyle.Element(contentAlignment = Alignment.Center) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FloatingActionButton(
                     { back() },
                     Modifier.size(40.dp),
-                    backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, 0.8f),
+                    backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, progress = 0.8f),
                     contentColor = MaterialTheme.colors.primary,
                 ) {
                     Icon(Icons.Default.KeyboardArrowLeft, "Back")
@@ -199,30 +201,30 @@ fun Login(
                 Spacer(Modifier.width(16.dp))
 
                 when (val s = state) {
-                    is LoginState.Initial ->
-                        FloatingActionButton(
-                            { state = s.load() },
-                            backgroundColor = MaterialTheme.colors.primary,
-                        ) { Icon(Icons.Default.Done, "Next") }
+                    is LoginState.Initial -> FloatingActionButton(
+                        { state = s.load() },
+                        backgroundColor = MaterialTheme.colors.primary,
+                        content = { Icon(Icons.Default.Done, "Next") },
+                    )
 
                     is LoginState.Loading -> FloatingActionButton(
                         { },
                         backgroundColor = MaterialTheme.colors.primary,
-                    ) {
-                        CircularProgressIndicator(
-                            Modifier.size(24.dp),
-                            color = LocalContentColor.current
-                        )
-                    }
+                        content = {
+                            CircularProgressIndicator(
+                                Modifier.size(24.dp),
+                                color = LocalContentColor.current,
+                            )
+                        },
+                    )
 
                     is LoginState.Error -> FloatingActionButton(
                         { state = s.retry() },
                         backgroundColor = MaterialTheme.colors.error,
-                    ) {
-                        Icon(Icons.Filled.Refresh, "Retry")
-                    }
+                        content = { Icon(Icons.Filled.Refresh, "Retry") },
+                    )
 
-                    is LoginState.Ok -> throw IllegalStateException()
+                    is LoginState.Ok -> error("LoginState.Ok unexpected")
                 }
 
                 Spacer(Modifier.width(56.dp))

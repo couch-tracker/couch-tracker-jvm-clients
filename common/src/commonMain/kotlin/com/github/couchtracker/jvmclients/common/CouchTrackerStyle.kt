@@ -6,7 +6,6 @@ import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.utils.blend
-import kotlin.time.Duration.Companion.milliseconds
 
 object CouchTrackerStyle {
     val darkColors = darkColors().let { colors ->

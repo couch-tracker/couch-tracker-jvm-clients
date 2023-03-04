@@ -22,17 +22,21 @@ class ItemAnimatableState(
 
     val horizontalSwipe: SwipeableState<Boolean> = SwipeableState(true, animationSpec, confirmStateChange)
     val horizontalSwipeProgress
-        get() :Float {
+        get(): Float {
             val progress = horizontalSwipe.progress
-            return if (!progress.to) progress.fraction
-            else 1 - progress.fraction
+            return when {
+                progress.to -> 1 - progress.fraction
+                else -> progress.fraction
+            }
         }
     val verticalSwipe: SwipeableState<Boolean> = SwipeableState(true, animationSpec, confirmStateChange)
     val verticalSwipeProgress
-        get() :Float {
+        get(): Float {
             val progress = verticalSwipe.progress
-            return if (!progress.to) progress.fraction
-            else 1 - progress.fraction
+            return when {
+                progress.to -> 1 - progress.fraction
+                else -> progress.fraction
+            }
         }
 
     /** This is a lambda because computation is expensive */
@@ -55,7 +59,7 @@ class ItemAnimatableState(
 
     fun visibility(): Float {
         return transitionState.value *
-                (1 - horizontalSwipeProgress) *
-                (1 - verticalSwipeProgress)
+            (1 - horizontalSwipeProgress) *
+            (1 - verticalSwipeProgress)
     }
 }

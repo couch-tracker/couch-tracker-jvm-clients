@@ -2,38 +2,32 @@
 
 package com.github.couchtracker.jvmclients.common.ui.component
 
-import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import com.github.couchtracker.jvmclients.common.*
-import com.github.couchtracker.jvmclients.common.data.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.unit.*
+import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
+import com.github.couchtracker.jvmclients.common.LocalDataPortals
+import com.github.couchtracker.jvmclients.common.Location
+import com.github.couchtracker.jvmclients.common.data.CachedValue
 import com.github.couchtracker.jvmclients.common.data.api.User
+import com.github.couchtracker.jvmclients.common.multiplatformSystemBarsPadding
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackNavigationUI
 import com.github.couchtracker.jvmclients.common.navigation.crossFade
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 internal val DRAWER_DEFAULT_WIDTH = 320.dp
 private val drawerCollapsedWidth = 56.dp
@@ -69,8 +63,10 @@ fun MainLayout(
         val drawerInitialVisibilityPx = with(LocalDensity.current) { drawerInitialVisibility.toPx() }
         Column(Modifier.multiplatformSystemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
             MainTopAppBar(drawerRevealed, stackState) {
-                if (drawerRevealed.targetValue) closeDrawer(true)
-                else openDrawer()
+                when {
+                    drawerRevealed.targetValue -> closeDrawer(true)
+                    else -> openDrawer()
+                }
             }
             Box {
                 MainDrawer(
@@ -85,18 +81,23 @@ fun MainLayout(
                 }
                 val alpha by animateFloatAsState(
                     targetValue = if (drawerRevealed.targetValue && !resizeContent) 0.6f else 1f,
-                    animationSpec = TweenSpec()
+                    animationSpec = TweenSpec(),
                 )
                 val additionalPadding =
-                    if (resizeContent) with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }
-                    else 0.dp
-                Box(Modifier
-                    .graphicsLayer { this.alpha = alpha }
-                    .padding(start = drawerInitialVisibility + additionalPadding, end = basePadding)
-                    .offset {
-                        if (resizeContent) IntOffset.Zero
-                        else IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
+                    when {
+                        resizeContent -> with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }
+                        else -> 0.dp
                     }
+                Box(
+                    Modifier
+                        .graphicsLayer { this.alpha = alpha }
+                        .padding(start = drawerInitialVisibility + additionalPadding, end = basePadding)
+                        .offset {
+                            when {
+                                resizeContent -> IntOffset.Zero
+                                else -> IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
+                            }
+                        },
                 ) {
                     MaterialTheme(colors = CouchTrackerStyle.lightColors) {
                         content()
@@ -115,7 +116,7 @@ fun MainLayout(
 @Composable
 private fun Modifier.swipeForDrawer(
     drawerRevealed: SwipeableState<Boolean>,
-    drawerInitialVisibility: Dp
+    drawerInitialVisibility: Dp,
 ): Modifier {
     val anchors = mapOf(
         0f to false,
@@ -125,7 +126,7 @@ private fun Modifier.swipeForDrawer(
         drawerRevealed,
         anchors,
         Orientation.Horizontal,
-        resistance = SwipeableDefaults.resistanceConfig(anchors.keys, factorAtMin = 0f)
+        resistance = SwipeableDefaults.resistanceConfig(anchors.keys, factorAtMin = 0f),
     )
 }
 
@@ -163,13 +164,15 @@ private fun MainDrawer(
 ) {
     val portals = LocalDataPortals.current
 
-    LazyColumn(modifier
-        .drawWithContent {
-            val cds = this
-            clipRect(0f, 0f, visibleWidth(), size.height) {
-                cds.drawContent()
-            }
-        }) {
+    LazyColumn(
+        modifier
+            .drawWithContent {
+                val cds = this
+                clipRect(0f, 0f, visibleWidth(), size.height) {
+                    cds.drawContent()
+                }
+            },
+    ) {
         items(portals.portals) { portal ->
             val user: CachedValue<User> by remember {
                 // TODO it should be the portal that remembers
@@ -183,12 +186,12 @@ private fun MainDrawer(
                             is CachedValue.Loading -> "Loading..."
                             is CachedValue.Error -> "Error: ${u.error.message}"
                             is CachedValue.Loaded -> u.data.username
-                        }
+                        },
                     )
                 },
                 secondaryText = {
                     Text(portal.connection.server.address, maxLines = 1, softWrap = false)
-                }
+                },
             )
         }
         item {

@@ -1,15 +1,18 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.github.couchtracker.jvmclients.common.data
 
 import com.github.couchtracker.jvmclients.common.data.api.User
 import com.github.couchtracker.jvmclients.common.utils.elapsedTime
+import mu.KotlinLogging
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import mu.KotlinLogging
-import kotlin.time.Duration.Companion.seconds
 
 sealed class CachedValue<out T : Any> {
     object Loading : CachedValue<Nothing>()
@@ -26,6 +29,8 @@ class ItemCache<T : Any>(
     val save: suspend (CachedValue.Loaded<T>) -> Unit,
     val download: suspend () -> T,
 ) {
+
+    @Suppress("LoopWithTooManyJumpStatements")
     val data: Flow<CachedValue<T>> = dbFlow.transformLatest { dbCachedValue ->
         // TODO: re-download when old
         if (dbCachedValue == null) {
@@ -41,13 +46,13 @@ class ItemCache<T : Any>(
                         save(downloaded)
                     }
                     break
-                } catch (e: Throwable) {
-                    if (e !is CancellationException) {
-                        logger.error(e) { "Error while downloading item" }
-                        // TODO: better retry strategy
-                        emit(CachedValue.Error(e))
-                        delay(5.seconds)
-                    } else break
+                } catch (ignored: CancellationException) {
+                    break
+                } catch (expected: Exception) {
+                    logger.error(expected) { "Error while downloading item" }
+                    // TODO: better retry strategy
+                    emit(CachedValue.Error(expected))
+                    delay(5.seconds)
                 }
             }
         } else {

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName", "Filename")
+
 package com.github.couchtracker.jvmclients.common
 
 import android.content.Context
@@ -21,6 +23,8 @@ actual class DriverFactory(private val context: Context) {
 
 actual fun hasBackButton(): Boolean = true
 
+private const val MAX_DISK_CACHE_SIZE = 512L * 1024 * 1024
+
 @Composable
 actual fun generateImageLoader(): ImageLoader {
     val context = LocalContext.current
@@ -30,17 +34,14 @@ actual fun generateImageLoader(): ImageLoader {
         }
         interceptor {
             memoryCacheConfig {
-                maxSizePercent(context, 0.25)
+                maxSizePercent(context, percent = 0.25)
             }
             diskCacheConfig {
                 directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                maxSizeBytes(512L * 1024 * 1024)
+                maxSizeBytes(MAX_DISK_CACHE_SIZE)
             }
         }
     }
 }
 
-@Composable
-actual fun Modifier.multiplatformSystemBarsPadding(): Modifier {
-    return systemBarsPadding()
-}
+actual fun Modifier.multiplatformSystemBarsPadding(): Modifier = systemBarsPadding()

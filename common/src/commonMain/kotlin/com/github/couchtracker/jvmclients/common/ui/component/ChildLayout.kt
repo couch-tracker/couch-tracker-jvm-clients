@@ -1,16 +1,14 @@
 package com.github.couchtracker.jvmclients.common.ui.component
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.hasBackButton
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.stackAnimation
@@ -21,7 +19,8 @@ fun TopAppBar(
     title: @Composable () -> Unit,
     state: ItemAnimatableState,
     goBackOrClose: () -> Unit,
-    screenWidth: Dp, screenHeight: Dp,
+    screenWidth: Dp,
+    screenHeight: Dp,
     swipeable: Boolean = true,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colors.background,
@@ -44,7 +43,9 @@ fun TopAppBar(
                     Icon(Icons.Default.ArrowBack, "Back")
                 }
             }
-        } else null,
+        } else {
+            null
+        },
     )
 }
 
@@ -83,7 +84,7 @@ fun ScreenOrPopup(
 fun ScreenCard(
     modifier: Modifier = Modifier,
     fullscreen: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Surface(
         modifier.padding(if (!fullscreen) 32.dp else 0.dp),
