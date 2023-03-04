@@ -1,3 +1,4 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import io.gitlab.arturbosch.detekt.Detekt
 
 group "com.github.couchtracker"
@@ -18,6 +19,7 @@ plugins {
     id("com.android.library") apply false
     id("org.jetbrains.compose") apply false
     id("io.gitlab.arturbosch.detekt").version("1.22.0")
+    id("com.github.ben-manes.versions") version "0.46.0"
 }
 
 detekt {
@@ -42,3 +44,16 @@ tasks.withType<Detekt>().configureEach {
         md.required.set(true)
     }
 }
+
+tasks.withType<DependencyUpdatesTask> {
+    fun isStable(version: String): Boolean {
+        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.toUpperCase().contains(it) }
+        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+        return stableKeyword || regex.matches(version)
+    }
+    gradleReleaseChannel = "current"
+    rejectVersionIf {
+        isStable(candidate.version).not()
+    }
+}
+

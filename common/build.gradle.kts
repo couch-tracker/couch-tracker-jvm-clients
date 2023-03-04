@@ -16,7 +16,7 @@ kotlin {
     }
     @Suppress("UnusedPrivateMember")
     sourceSets {
-        val ktorVersion = "2.2.3"
+        val ktorVersion = "2.2.4"
         val sqldelightVersion = "2.0.0-alpha05"
         val commonMain by getting {
             dependencies {
@@ -24,7 +24,7 @@ kotlin {
                 api(compose.foundation)
                 api(compose.material)
                 api(compose.materialIconsExtended)
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
                 // HTTP client
@@ -38,7 +38,7 @@ kotlin {
                 implementation("app.cash.sqldelight:coroutines-extensions:$sqldelightVersion")
                 implementation("app.cash.sqldelight:async-extensions:$sqldelightVersion")
                 // Images
-                implementation("io.github.qdsfdhvh:image-loader:1.2.9")
+                implementation("io.github.qdsfdhvh:image-loader:1.2.10")
                 // Logging
                 implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
             }
