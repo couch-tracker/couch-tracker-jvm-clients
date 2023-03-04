@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class, ExperimentalCoroutinesApi::class)
 
 package com.github.couchtracker.jvmclients.common.ui.screen.addconnection
 
@@ -24,6 +24,7 @@ import mu.KotlinLogging
 import java.net.ConnectException
 import java.nio.channels.UnresolvedAddressException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.mapLatest
 

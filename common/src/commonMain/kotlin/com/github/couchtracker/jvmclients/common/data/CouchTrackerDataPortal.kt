@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.github.couchtracker.jvmclients.common.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
@@ -17,6 +19,7 @@ import io.ktor.client.request.parameter
 import mu.KotlinLogging
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.runningFold
