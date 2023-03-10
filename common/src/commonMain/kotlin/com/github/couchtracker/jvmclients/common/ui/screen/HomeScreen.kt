@@ -23,8 +23,14 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
+            Button({ editStack(stackData.push(ShowLocation("tmdb:1705"))) }) {
+                Text("Fringe")
+            }
             Button({ editStack(stackData.push(ShowLocation("tmdb:57243"))) }) {
-                Text("Open show")
+                Text("Doctor Who")
+            }
+            Button({ editStack(stackData.push(ShowLocation("tmdb:60059"))) }) {
+                Text("Better Call Saul")
             }
             Spacer(Modifier.weight(1f))
         }
@@ -32,8 +38,6 @@ fun HomeScreen(
 }
 
 object HomeLocation : Location() {
-
-    override val title = null
 
     @Composable
     override fun title() {

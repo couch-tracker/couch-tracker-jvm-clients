@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
+import com.github.couchtracker.jvmclients.common.data.CachedValue
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackData
@@ -31,16 +32,6 @@ fun ShowScreen(
     editStack: (StackData<Location>?) -> Unit,
     id: String,
 ) {
-    val activePortal = LocalDataPortals.current.active
-    LaunchedEffect(id, activePortal) {
-        if (activePortal != null) {
-            try {
-                println(activePortal.show(id))
-            } catch (expected: Exception) {
-                expected.printStackTrace()
-            }
-        }
-    }
 
     BoxWithConstraints {
         val width = maxWidth
@@ -64,20 +55,28 @@ fun ShowScreen(
 
 data class ShowLocation(val id: String) : Location() {
 
-    override val title = "Fringe"
-
     @Composable
     override fun title() {
-        Text("Fringe")
+        val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
+        when (val s = show) {
+            is CachedValue.Loaded -> Text(s.data.name)
+            else -> {}
+        }
     }
 
     @Composable
     override fun background() {
-        val painter = rememberAsyncImagePainter(
-            "https://www.themoviedb.org/t/p/original/wmF2N0mZT9pLHJB8w2Rocfq80j2.jpg",
-            contentScale = ContentScale.Crop,
-        )
-        FadeInImage(painter, Modifier.fillMaxSize().alpha(0.4f).blur(8.dp))
+        val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
+        when (val s = show) {
+            is CachedValue.Loaded -> {
+                val painter = rememberAsyncImagePainter(
+                    s.data.backdropClean.url,
+                    contentScale = ContentScale.Crop,
+                )
+                FadeInImage(painter, Modifier.fillMaxSize().alpha(0.4f).blur(8.dp))
+            }
+            else -> {}
+        }
     }
 
     @Composable

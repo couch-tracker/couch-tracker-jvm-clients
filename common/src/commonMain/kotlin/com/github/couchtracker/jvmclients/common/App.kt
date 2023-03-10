@@ -2,13 +2,7 @@ package com.github.couchtracker.jvmclients.common
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerCredentials
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerDataPortals
@@ -30,6 +24,7 @@ fun App(
     stackData: StackData<Location>,
     editStack: (StackData<Location>?) -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
     val database = remember {
         Database(
             driver = driverFactory.createDriver(),
@@ -45,7 +40,7 @@ fun App(
             ),
         )
     }
-    val dataPortals by remember(database) { CouchTrackerDataPortals.getInstance(database) }
+    val dataPortals by remember(database) { CouchTrackerDataPortals.getInstance(scope, database) }
         .collectAsState(CouchTrackerDataPortals.empty)
 
     MaterialTheme(
@@ -89,8 +84,6 @@ fun App(
 }
 
 abstract class Location : AppDestination {
-
-    abstract val title: String?
 
     @Composable
     abstract fun title()

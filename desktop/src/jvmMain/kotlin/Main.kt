@@ -11,17 +11,9 @@ fun main() {
     val driver = DriverFactory()
     application(exitProcessOnExit = true) {
         var stackData by remember { mutableStateOf(StackData.of<Location>(HomeLocation)) }
-        val title = buildString {
-            append("Couch tracker")
-            val top = stackData.stack.last().title
-            if (top != null) {
-                append(" - ")
-                append(top)
-            }
-        }
         Window(
             state = remember { WindowState(width = 1080.dp, height = 800.dp) },
-            title = title,
+            title = "Couch tracker",
             onCloseRequest = ::exitApplication,
         ) {
             App(

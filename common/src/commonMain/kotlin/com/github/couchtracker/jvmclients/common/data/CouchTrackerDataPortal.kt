@@ -5,7 +5,6 @@ package com.github.couchtracker.jvmclients.common.data
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.github.couchtracker.jvmclients.common.data.api.User
 import com.github.couchtracker.jvmclients.common.utils.elapsedTime
@@ -18,11 +17,15 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import mu.KotlinLogging
 import java.util.Locale
+import java.util.Optional
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.runningFold
+import kotlinx.datetime.Clock
 
 private val logger = KotlinLogging.logger {}
 
@@ -31,15 +34,22 @@ class CouchTrackerDataPortals(
 ) {
     val active = portals.firstOrNull()
 
+    fun show(
+        showId: String,
+        locales: List<Locale> = listOf(Locale.ENGLISH),
+    ): Flow<CachedValue<ShowBasicInfo>> {
+        return active?.show(showId, locales) ?: MutableStateFlow(CachedValue.Error(RuntimeException(), Clock.System.now()))
+    }
+
     companion object {
         val empty = CouchTrackerDataPortals(emptyList())
-        fun getInstance(database: Database): Flow<CouchTrackerDataPortals> {
+        fun getInstance(scope: CoroutineScope, database: Database): Flow<CouchTrackerDataPortals> {
             return database.couchTrackerCredentialsQueries.all()
                 .asFlow()
                 .mapToList(Dispatchers.Main)
                 .runningFold(emptyMap<CouchTrackerConnection, CouchTrackerDataPortal>()) { previous, connections ->
                     connections.associateWith {
-                        previous[it] ?: CouchTrackerDataPortal(it, database)
+                        previous[it] ?: CouchTrackerDataPortal(scope, it, database)
                     }
                 }
                 .mapLatest { CouchTrackerDataPortals(it.values.toList()) }
@@ -48,6 +58,7 @@ class CouchTrackerDataPortals(
 }
 
 class CouchTrackerDataPortal(
+    val scope: CoroutineScope,
     val connection: CouchTrackerConnection,
     val database: Database,
 ) {
@@ -101,36 +112,50 @@ class CouchTrackerDataPortal(
             }
     }
 
-    fun user(userId: String): Flow<CachedValue<User>> {
-        // TODO: this should be cached
-        return ItemCache(
-            dbFlow = database.userCacheQueries
+    private val userCache = ItemsCache.persistent<String, User>(
+        scope = scope,
+        load = { userId ->
+            val local = database.userCacheQueries
                 .get(connection, userId)
-                .asFlow()
-                .mapToOneOrNull(Dispatchers.Main)
-                .mapLatest { it?.toCachedValue() },
-            save = {
-                database.userCacheQueries.upsert(
-                    id = userId,
-                    connection = connection,
-                    user = it.data,
-                    downloadTime = it.downloadTime,
-                )
-            },
-            download = { client.get("users/$userId").body() },
-        ).data
+                .awaitAsOneOrNull()
+            Optional
+                .ofNullable(local)
+                .map {
+                    CachedValue.Loaded(it.user, it.downloadTime)
+                }
+        },
+        save = { userId, data ->
+            database.userCacheQueries.upsert(
+                id = userId,
+                connection = connection,
+                user = data.data,
+                downloadTime = data.downloadTime,
+            )
+        },
+        download = { userId ->
+            runCatching { client.get("users/$userId").body() }
+        },
+    )
+
+    fun user(userId: String): Flow<CachedValue<User>> {
+        return userCache.get(userId)
     }
 
-    suspend fun show(
+    private val showBasicInfoCache = ItemsCache.volatile<LocalizedKey<String>, ShowBasicInfo>(
+        scope = scope,
+        download = { (locales, showId) ->
+            runCatching {
+                client.get("shows/$showId") {
+                    locales.forEach { parameter("locales", it.language) }
+                }.body()
+            }
+        },
+    )
+
+    fun show(
         showId: String,
         locales: List<Locale> = listOf(Locale.ENGLISH),
-    ): ShowBasicInfo {
-        // TODO: do it like the user
-        return client.get("shows/$showId") {
-            // TODO: do better
-            locales.forEach {
-                parameter("locales", it.language)
-            }
-        }.body()
+    ): Flow<CachedValue<ShowBasicInfo>> {
+        return showBasicInfoCache.get(LocalizedKey(locales, showId))
     }
 }

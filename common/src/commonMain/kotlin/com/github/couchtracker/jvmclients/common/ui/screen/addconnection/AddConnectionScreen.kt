@@ -41,8 +41,6 @@ import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
 import kotlinx.datetime.Clock
 
 object AddConnectionLocation : Location() {
-    override val title = "Add connection"
-
     @Composable
     override fun title() {
     }
