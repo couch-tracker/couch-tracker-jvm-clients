@@ -2,6 +2,7 @@
 
 package com.github.couchtracker.jvmclients.common.ui.screen
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -58,9 +59,10 @@ data class ShowLocation(val id: String) : Location() {
     @Composable
     override fun title() {
         val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
-        when (val s = show) {
-            is CachedValue.Loaded -> Text(s.data.name)
-            else -> {}
+        Crossfade(show) { s ->
+            if (s is CachedValue.Loaded) {
+                Text(s.data.name)
+            }
         }
     }
 
@@ -75,6 +77,7 @@ data class ShowLocation(val id: String) : Location() {
                 )
                 FadeInImage(painter, Modifier.fillMaxSize().alpha(0.4f).blur(8.dp))
             }
+
             else -> {}
         }
     }
