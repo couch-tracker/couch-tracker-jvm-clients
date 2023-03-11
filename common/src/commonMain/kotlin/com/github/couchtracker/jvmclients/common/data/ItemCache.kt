@@ -43,7 +43,7 @@ fun <T> Array<CachedValue<T>>.combine(): CachedValue<List<T>> {
         )
     }
 
-    if (all { it is CachedValue.Loading }) {
+    if (none { it is CachedValue.Error }) {
         return CachedValue.Loading
     }
 

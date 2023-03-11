@@ -32,13 +32,11 @@ class SwipeToPopNestedScrollConnection(
     }
 
     private fun onScroll(available: Offset): Offset {
-        println("OnScroll = ${available.y}")
         val consumed = state.verticalSwipe.performDrag(available.y)
         return Offset(x = 0f, y = consumed)
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        println("OnFling = ${available.y}")
         state.verticalSwipe.performFling(available.y)
         return Velocity(0f, available.y)
     }
