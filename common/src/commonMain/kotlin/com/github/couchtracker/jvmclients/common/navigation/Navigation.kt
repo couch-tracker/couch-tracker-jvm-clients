@@ -88,13 +88,12 @@ fun <T : AppDestination> rememberStackState(
         .map { it.key to it.value }
 
     val visible = sortedStates.visible(canSeeBehind)
-    val hasDroppedSomething = visible.size != itemStates.size
 
     if (visible.isNotEmpty()) {
         visible.forEachIndexed { index, (destination, state) ->
             val onTop = visible.subList(index + 1, visible.size)
             state.itemsOnTopCanSeeBehind = onTop.isNotEmpty() && onTop.all { canSeeBehind(it.first) }
-            state.canPop = hasDroppedSomething || index > 0
+            state.canPop = stack.bottomOrNull() != destination
             state.isOpaque = !canSeeBehind(destination)
             state.isOnTop = onTop.isEmpty()
             state.topItemsVisibility = {

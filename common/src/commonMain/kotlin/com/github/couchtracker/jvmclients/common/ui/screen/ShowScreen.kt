@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.*
-import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CachedValue
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerDataPortal
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
@@ -29,18 +29,19 @@ import com.seiko.imageloader.rememberAsyncImagePainter
 
 @Composable
 fun ShowScreen(
-    stackData: StackData<Location>,
+    dataPortal: CouchTrackerDataPortal,
     state: ItemAnimatableState,
-    editStack: (StackData<Location>?) -> Unit,
     id: String,
 ) {
     Column {
-        Text("  Insert      some    tabs    here", Modifier.crossFade(state))
+        Text("Insert      some    tabs    here", Modifier.crossFade(state))
         Spacer(Modifier.height(96.dp).fillMaxWidth())
         FullscreenCard(state) { w, h ->
-            val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
+            val show by remember(dataPortal) {
+                dataPortal.show(id)
+            }.collectAsState(CachedValue.Loading)
             CachedValueContainer(Modifier.fillMaxSize(), show) { s ->
-                LoadedContent(s, state, w, h)
+                LoadedContent(s, w)
             }
         }
     }
@@ -49,9 +50,7 @@ fun ShowScreen(
 @Composable
 private fun LoadedContent(
     show: ShowBasicInfo,
-    state: ItemAnimatableState,
     width: Dp,
-    height: Dp,
 ) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
@@ -91,11 +90,11 @@ private fun ShowHeader(
     }
 }
 
-data class ShowLocation(val id: String) : Location() {
+data class ShowLocation(val id: String) : Location.Authenticated() {
 
     @Composable
-    override fun title() {
-        val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
+    override fun titleAuthenticated(dataPortal: CouchTrackerDataPortal) {
+        val show by dataPortal.show(id).collectAsState(CachedValue.Loading)
         Crossfade(show) { s ->
             if (s is CachedValue.Loaded) {
                 Text(s.data.name)
@@ -104,8 +103,8 @@ data class ShowLocation(val id: String) : Location() {
     }
 
     @Composable
-    override fun background() {
-        val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
+    override fun backgroundAuthenticated(dataPortal: CouchTrackerDataPortal) {
+        val show by dataPortal.show(id).collectAsState(CachedValue.Loading)
         when (val s = show) {
             is CachedValue.Loaded -> {
                 if (s.data.backdropClean != null) {
@@ -122,12 +121,13 @@ data class ShowLocation(val id: String) : Location() {
     }
 
     @Composable
-    override fun content(
+    override fun contentAuthenticated(
+        dataPortal: CouchTrackerDataPortal,
         database: Database,
         stackData: StackData<Location>,
         state: ItemAnimatableState,
         editStack: (StackData<Location>?) -> Unit,
     ) {
-        ShowScreen(stackData, state, editStack, id)
+        ShowScreen(dataPortal, state, id)
     }
 }

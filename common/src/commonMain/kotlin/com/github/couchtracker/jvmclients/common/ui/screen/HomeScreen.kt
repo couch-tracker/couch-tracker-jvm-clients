@@ -6,9 +6,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
-import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CachedValue
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerDataPortal
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.github.couchtracker.jvmclients.common.data.combine
@@ -26,13 +26,13 @@ private val shows = listOf(
 
 @Composable
 fun HomeScreen(
+    dataPortal: CouchTrackerDataPortal,
     stackData: StackData<Location>,
     state: ItemAnimatableState,
     editStack: (StackData<Location>?) -> Unit,
 ) {
-    val portals = LocalDataPortals.current
-    val showList: CachedValue<List<ShowBasicInfo>> by remember(portals) {
-        combine(shows.map { portals.show(it) }) { s -> s.combine() }
+    val showList: CachedValue<List<ShowBasicInfo>> by remember(dataPortal) {
+        combine(shows.map { dataPortal.show(it) }) { s -> s.combine() }
     }.collectAsState(CachedValue.Loading)
 
     FullscreenCard(state) { w, h ->
@@ -52,24 +52,25 @@ fun HomeScreen(
     }
 }
 
-object HomeLocation : Location() {
+object HomeLocation : Location.Authenticated() {
 
     @Composable
-    override fun title() {
+    override fun titleAuthenticated(dataPortal: CouchTrackerDataPortal) {
         Text("Couch tracker")
     }
 
     @Composable
-    override fun background() {
+    override fun backgroundAuthenticated(dataPortal: CouchTrackerDataPortal) {
     }
 
     @Composable
-    override fun content(
+    override fun contentAuthenticated(
+        dataPortal: CouchTrackerDataPortal,
         database: Database,
         stackData: StackData<Location>,
         state: ItemAnimatableState,
         editStack: (StackData<Location>?) -> Unit,
     ) {
-        HomeScreen(stackData, state, editStack)
+        HomeScreen(dataPortal, stackData, state, editStack)
     }
 }

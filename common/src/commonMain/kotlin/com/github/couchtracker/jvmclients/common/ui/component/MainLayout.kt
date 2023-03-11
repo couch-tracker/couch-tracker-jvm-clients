@@ -21,6 +21,8 @@ import com.github.couchtracker.jvmclients.common.CouchTrackerStyle
 import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CachedValue
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerDataPortal
 import com.github.couchtracker.jvmclients.common.data.api.User
 import com.github.couchtracker.jvmclients.common.multiplatformSystemBarsPadding
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
@@ -35,10 +37,12 @@ private val drawerExpandedWidth = DRAWER_DEFAULT_WIDTH
 
 @Composable
 fun MainLayout(
+    dataPortal: CouchTrackerDataPortal?,
     stackState: List<Pair<Location, ItemAnimatableState>>,
     showPartialDrawer: Boolean,
     resizeContent: Boolean,
     addConnection: () -> Unit,
+    manageConnection: (CouchTrackerConnection) -> Unit,
     content: @Composable () -> Unit,
 ) {
     val cs = rememberCoroutineScope()
@@ -54,58 +58,61 @@ fun MainLayout(
             cs.launch { drawerRevealed.animateTo(false) }
         }
     }
-    Surface(color = MaterialTheme.colors.background) {
-        StackNavigationUI(stackState) { location, state ->
-            Box(Modifier.crossFade(state)) { location.background() }
-        }
-        val basePadding = if (showPartialDrawer) 16.dp else 8.dp
-        val drawerInitialVisibility = if (showPartialDrawer) drawerCollapsedWidth else basePadding
-        val drawerInitialVisibilityPx = with(LocalDensity.current) { drawerInitialVisibility.toPx() }
-        Column(Modifier.multiplatformSystemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
-            MainTopAppBar(drawerRevealed, stackState) {
-                when {
-                    drawerRevealed.targetValue -> closeDrawer(true)
-                    else -> openDrawer()
-                }
+    StackNavigationUI(stackState) { location, state ->
+        Box(Modifier.crossFade(state)) { location.background(dataPortal) }
+    }
+    val basePadding = if (showPartialDrawer) 16.dp else 8.dp
+    val drawerInitialVisibility = if (showPartialDrawer) drawerCollapsedWidth else basePadding
+    val drawerInitialVisibilityPx = with(LocalDensity.current) { drawerInitialVisibility.toPx() }
+    Column(Modifier.multiplatformSystemBarsPadding().swipeForDrawer(drawerRevealed, drawerInitialVisibility)) {
+        MainTopAppBar(dataPortal, drawerRevealed, stackState) {
+            when {
+                drawerRevealed.targetValue -> closeDrawer(true)
+                else -> openDrawer()
             }
-            Box {
-                MainDrawer(
-                    Modifier
-                        .width(DRAWER_DEFAULT_WIDTH).fillMaxHeight()
-                        .align(Alignment.CenterStart)
-                        .swipeForDrawer(drawerRevealed, drawerInitialVisibility),
-                    visibleWidth = { drawerInitialVisibilityPx + drawerRevealed.offset.value },
-                ) {
+        }
+        Box {
+            MainDrawer(
+                Modifier
+                    .width(DRAWER_DEFAULT_WIDTH).fillMaxHeight()
+                    .align(Alignment.CenterStart)
+                    .swipeForDrawer(drawerRevealed, drawerInitialVisibility),
+                visibleWidth = { drawerInitialVisibilityPx + drawerRevealed.offset.value },
+                addConnection = {
                     addConnection()
                     closeDrawer(false)
+                },
+                manageConnection = {
+                    manageConnection(it)
+                    closeDrawer(false)
+                },
+            )
+            val alpha by animateFloatAsState(
+                targetValue = if (drawerRevealed.targetValue && !resizeContent) 0.6f else 1f,
+                animationSpec = TweenSpec(),
+            )
+            val additionalPadding =
+                when {
+                    resizeContent -> with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }
+                    else -> 0.dp
                 }
-                val alpha by animateFloatAsState(
-                    targetValue = if (drawerRevealed.targetValue && !resizeContent) 0.6f else 1f,
-                    animationSpec = TweenSpec(),
-                )
-                val additionalPadding =
-                    when {
-                        resizeContent -> with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }
-                        else -> 0.dp
-                    }
-                Box(
-                    Modifier
-                        .graphicsLayer { this.alpha = alpha }
-                        .padding(start = drawerInitialVisibility + additionalPadding, end = basePadding)
-                        .offset {
-                            when {
-                                resizeContent -> IntOffset.Zero
-                                else -> IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
-                            }
-                        },
-                ) {
-                    MaterialTheme(colors = CouchTrackerStyle.lightColors) {
-                        content()
-                    }
-                    if (!resizeContent) {
-                        Scrim(drawerRevealed.targetValue) {
-                            closeDrawer(true)
+            Box(
+                Modifier
+                    .graphicsLayer { this.alpha = alpha }
+                    .padding(start = drawerInitialVisibility + additionalPadding, end = basePadding)
+                    .offset {
+                        when {
+                            resizeContent -> IntOffset.Zero
+                            else -> IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
                         }
+                    },
+            ) {
+                MaterialTheme(colors = CouchTrackerStyle.lightColors) {
+                    content()
+                }
+                if (!resizeContent) {
+                    Scrim(drawerRevealed.targetValue) {
+                        closeDrawer(true)
                     }
                 }
             }
@@ -132,6 +139,7 @@ private fun Modifier.swipeForDrawer(
 
 @Composable
 private fun MainTopAppBar(
+    dataPortal: CouchTrackerDataPortal?,
     drawerRevealed: SwipeableState<Boolean>,
     stackState: List<Pair<Location, ItemAnimatableState>>,
     toggleDrawer: () -> Unit,
@@ -144,7 +152,7 @@ private fun MainTopAppBar(
                     IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
                 },
             ) { location, state ->
-                Box(Modifier.crossFade(state, overlap = .75f)) { location.title() }
+                Box(Modifier.crossFade(state, overlap = .75f)) { location.title(dataPortal) }
             }
         },
         backgroundColor = Color.Transparent,
@@ -163,6 +171,7 @@ private fun MainDrawer(
     modifier: Modifier = Modifier,
     visibleWidth: () -> Float,
     addConnection: () -> Unit,
+    manageConnection: (CouchTrackerConnection) -> Unit,
 ) {
     val portals = LocalDataPortals.current
 
@@ -181,6 +190,7 @@ private fun MainDrawer(
                 portal.user(portal.connection.userId)
             }.collectAsState(CachedValue.Loading)
             ListItem(
+                modifier = Modifier.clickable { manageConnection(portal.connection) },
                 icon = { Icon(Icons.Default.AccountCircle, null) },
                 text = {
                     Text(

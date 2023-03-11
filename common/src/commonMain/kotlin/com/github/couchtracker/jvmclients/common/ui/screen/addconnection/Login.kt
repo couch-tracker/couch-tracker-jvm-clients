@@ -56,6 +56,7 @@ private sealed interface LoginState {
                 HttpStatusCode.Unauthorized -> "Incorrect login and/or password"
                 else -> null
             }
+
             else -> null
         }
 
@@ -74,11 +75,14 @@ private val logger = KotlinLogging.logger("Login")
 @Composable
 fun Login(
     modifier: Modifier,
-    back: () -> Unit,
+    back: (() -> Unit)?,
     server: CouchTrackerServer,
+    forcedLogin: String? = null,
     onLogin: (CouchTrackerServer, AuthenticationInfo) -> Unit,
 ) {
-    var state by remember { mutableStateOf<LoginState>(LoginState.Initial()) }
+    var state by remember { mutableStateOf(LoginState.Initial().withLogin(forcedLogin.orEmpty())) }
+    remember(forcedLogin) { if (forcedLogin != null) state = state.withLogin(forcedLogin) }
+
     val stateTransition = updateTransition(targetState = state)
 
     val stateFlow = rememberStateFlow(state) {
@@ -130,6 +134,7 @@ fun Login(
                     state.login,
                     { state = state.withLogin(it) },
                     Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    enabled = forcedLogin == null,
                     singleLine = true,
                     label = { Text("Username or email") },
                     isError = state is LoginState.Error,
@@ -150,7 +155,13 @@ fun Login(
                 OutlinedTextField(
                     state.password,
                     { state = state.withPassword(it) },
-                    Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth().then(
+                        if (forcedLogin != null) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        },
+                    ),
                     label = { Text("Password") },
                     isError = state is LoginState.Error,
                     singleLine = true,
@@ -190,15 +201,17 @@ fun Login(
         }
         AddConnectionStyle.Element(contentAlignment = Alignment.Center) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FloatingActionButton(
-                    { back() },
-                    Modifier.size(40.dp),
-                    backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, progress = 0.8f),
-                    contentColor = MaterialTheme.colors.primary,
-                ) {
-                    Icon(Icons.Default.KeyboardArrowLeft, "Back")
+                if (back != null) {
+                    FloatingActionButton(
+                        { back() },
+                        Modifier.size(40.dp),
+                        backgroundColor = MaterialTheme.colors.primary.blend(MaterialTheme.colors.background, progress = 0.8f),
+                        contentColor = MaterialTheme.colors.primary,
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowLeft, "Back")
+                    }
+                    Spacer(Modifier.width(16.dp))
                 }
-                Spacer(Modifier.width(16.dp))
 
                 when (val s = state) {
                     is LoginState.Initial -> FloatingActionButton(
@@ -227,7 +240,9 @@ fun Login(
                     is LoginState.Ok -> error("LoginState.Ok unexpected")
                 }
 
-                Spacer(Modifier.width(56.dp))
+                if (back != null) {
+                    Spacer(Modifier.width(56.dp))
+                }
             }
         }
     }

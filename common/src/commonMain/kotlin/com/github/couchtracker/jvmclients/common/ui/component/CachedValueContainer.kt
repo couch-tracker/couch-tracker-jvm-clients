@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.data.CachedValue
 
 @Composable
@@ -22,8 +24,18 @@ fun NotLoadedContent(modifier: Modifier, data: CachedValue.NotLoaded) {
     when (data) {
         is CachedValue.Error -> {
             // TODO: improve
-            Column {
-                Text(data.error.message ?: "Unknown error")
+            Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.weight(1f))
+
+                Icon(data.error.icon, null, Modifier.size(64.dp))
+                Text(data.error.message, textAlign = TextAlign.Center)
+                data.error.action?.let {
+                    TextButton(it.action) {
+                        Text(it.name)
+                    }
+                }
+
+                Spacer(Modifier.weight(1f))
             }
         }
 

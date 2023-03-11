@@ -17,6 +17,17 @@ data class StackData<T : AppDestination>(
         return StackData(stack.minus(item))
     }
 
+    fun replace(toPop: T, toPush: T): StackData<T> {
+        return StackData(
+            stack.map {
+                when (it) {
+                    toPop -> toPush
+                    else -> it
+                }
+            },
+        )
+    }
+
     fun push(item: T): StackData<T> {
         return StackData(stack.minus(item).plus(item))
     }
@@ -30,6 +41,8 @@ data class StackData<T : AppDestination>(
     }
 
     fun contains(item: T) = stack.contains(item)
+    fun topOrNull() = stack.lastOrNull()
+    fun bottomOrNull() = stack.firstOrNull()
 
     companion object {
         fun <T : AppDestination> of(home: T) = StackData(listOf(home))

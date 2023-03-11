@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerConnection
+import com.github.couchtracker.jvmclients.common.data.CouchTrackerDataPortal
 import com.github.couchtracker.jvmclients.common.data.CouchTrackerServer
 import com.github.couchtracker.jvmclients.common.data.Database
 import com.github.couchtracker.jvmclients.common.data.api.CouchTrackerServerInfo
@@ -38,19 +37,21 @@ import com.github.couchtracker.jvmclients.common.navigation.slideAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 import com.github.couchtracker.jvmclients.common.ui.component.ScreenCard
 import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
-import kotlinx.datetime.Clock
 
 object AddConnectionLocation : Location() {
+    override val popup = true
+
     @Composable
-    override fun title() {
+    override fun title(dataPortal: CouchTrackerDataPortal?) {
     }
 
     @Composable
-    override fun background() {
+    override fun background(dataPortal: CouchTrackerDataPortal?) {
     }
 
     @Composable
     override fun content(
+        dataPortal: CouchTrackerDataPortal?,
         database: Database,
         stackData: StackData<Location>,
         state: ItemAnimatableState,
@@ -154,19 +155,9 @@ fun AddConnectionScreen(
                             Modifier.swipeToPop(childState, width, height, horizontal = true, vertical = false),
                             { stack = stack.pop(destination) },
                             destination.server,
-                            { server, authenticationInfo ->
+                            onLogin = { server, authenticationInfo ->
                                 val connection = CouchTrackerConnection(server, authenticationInfo.user.id)
-                                database.userCacheQueries.upsert(
-                                    user = authenticationInfo.user,
-                                    downloadTime = Clock.System.now(),
-                                    connection = connection,
-                                    id = authenticationInfo.user.id,
-                                )
-                                database.couchTrackerCredentialsQueries.upsert(
-                                    connection = connection,
-                                    accessToken = authenticationInfo.accessToken,
-                                    refreshToken = authenticationInfo.refreshToken,
-                                )
+                                authenticationInfo.save(connection, database)
                                 goBackOrClose()
                             },
                         )
