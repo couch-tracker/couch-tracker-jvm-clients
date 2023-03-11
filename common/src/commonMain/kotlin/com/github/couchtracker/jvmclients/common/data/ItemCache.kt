@@ -2,17 +2,20 @@
 
 package com.github.couchtracker.jvmclients.common.data
 
+import com.github.couchtracker.jvmclients.common.utils.elapsedTime
 import mu.KotlinLogging
 import java.util.Locale
 import java.util.Optional
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -57,7 +60,9 @@ class ItemsCache<K, T> private constructor(
                 state = state.next()
                 emit(state.data)
             }
-        }.shareIn(scope, SharingStarted.WhileSubscribed(), 1)
+        }
+            .flowOn(Dispatchers.IO)
+            .shareIn(scope, SharingStarted.WhileSubscribed(), 1)
     }
 
     companion object {
@@ -70,16 +75,19 @@ class ItemsCache<K, T> private constructor(
             return ItemsCache(
                 scope,
                 { k ->
-                    logger.debug { "Loading $k from database" }
-                    load(k)
+                    logger.elapsedTime("Loading $k from database") {
+                        load(k)
+                    }
                 },
                 { k, v ->
-                    logger.debug { "Saving $k to database" }
-                    save(k, v)
+                    logger.elapsedTime("Saving $k to database") {
+                        save(k, v)
+                    }
                 },
                 { k ->
-                    logger.debug { "Downloading $k" }
-                    download(k)
+                    logger.elapsedTime("Downloading $k") {
+                        download(k)
+                    }
                 },
             )
         }
@@ -93,8 +101,9 @@ class ItemsCache<K, T> private constructor(
                 { Optional.empty() },
                 { _, _ -> },
                 { k ->
-                    logger.debug { "Downloading $k" }
-                    download(k)
+                    logger.elapsedTime("Downloading $k") {
+                        download(k)
+                    }
                 },
             )
         }

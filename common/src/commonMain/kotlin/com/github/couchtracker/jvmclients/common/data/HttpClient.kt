@@ -3,8 +3,8 @@ package com.github.couchtracker.jvmclients.common.data
 import com.github.couchtracker.jvmclients.common.utils.elapsedTime
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.engine.cio.CIOEngineConfig
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
@@ -20,13 +20,20 @@ private val logger = KotlinLogging.logger {}
 
 fun couchTrackerHttpClient(
     server: CouchTrackerServer,
-    f: HttpClientConfig<CIOEngineConfig>.() -> Unit = {},
+    f: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient {
     return logger.elapsedTime("Creating HTTP client") {
-        HttpClient(CIO) {
+        HttpClient(OkHttp) {
             expectSuccess = true
             defaultRequest {
                 url(server.address + "/api/")
+            }
+            //install(Logging){
+            //    level = LogLevel.INFO
+            //}
+            install(ContentEncoding){
+                deflate(1.0F)
+                gzip(0.9F)
             }
             install(ContentNegotiation) {
                 json(defaultJson)

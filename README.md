@@ -7,7 +7,7 @@ Android and desktop clients for Couch Tracker.
 A non-exhaustive list of things left to do.
 
 Navigation:
- - Propagate the back-button action to inner components
+ - Propagate the back-button action to inner components (e.g. login screen; drawer, etc.)
  - Add state to AppDestination
 
 Usability:
