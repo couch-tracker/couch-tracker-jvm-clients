@@ -146,9 +146,7 @@ fun AddConnectionScreen(
                     color = MaterialTheme.colors.background,
                 ) {
                     when (destination) {
-                        AddConnectionState.ChooseServerState -> ChooseServer(
-                            Modifier.swipeToPop(state, width, height),
-                        ) {
+                        AddConnectionState.ChooseServerState -> ChooseServer {
                             stack = stack.push(it)
                         }
 

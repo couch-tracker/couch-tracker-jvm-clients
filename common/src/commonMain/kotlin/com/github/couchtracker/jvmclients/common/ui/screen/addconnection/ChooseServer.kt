@@ -48,7 +48,7 @@ private val logger = KotlinLogging.logger("ChooseServer")
 
 @Composable
 fun ChooseServer(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     pushState: (AddConnectionState.LoginState) -> Unit,
 ) {
     var server by remember { mutableStateOf(CouchTrackerServer("")) }
