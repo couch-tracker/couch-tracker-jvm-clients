@@ -24,6 +24,7 @@ import com.github.couchtracker.jvmclients.common.navigation.crossFade
 import com.github.couchtracker.jvmclients.common.navigation.popOrNull
 import com.github.couchtracker.jvmclients.common.navigation.stackAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
+import com.github.couchtracker.jvmclients.common.ui.component.CachedValueContainer
 import com.github.couchtracker.jvmclients.common.ui.component.FadeInImage
 import com.github.couchtracker.jvmclients.common.ui.component.NotLoadedContent
 import com.github.couchtracker.jvmclients.common.ui.component.ScreenCard
@@ -45,11 +46,8 @@ fun ShowScreen(
             Spacer(Modifier.height(96.dp))
             ScreenCard(Modifier.stackAnimation(state, width, height)) {
                 val show by LocalDataPortals.current.show(id).collectAsState(CachedValue.Loading)
-                Crossfade(show) { s ->
-                    when (s) {
-                        is CachedValue.Loaded -> LoadedContent(s.data, stackData, state, editStack, width, height)
-                        is CachedValue.NotLoaded -> NotLoadedContent(Modifier.fillMaxSize(), s)
-                    }
+                CachedValueContainer(Modifier.fillMaxSize(), show) { s ->
+                    LoadedContent(s, stackData, state, editStack, width, height)
                 }
             }
         }
@@ -93,9 +91,7 @@ private fun ShowHeader(
             )
             FadeInImage(
                 painter,
-                Modifier
-                    .width(minOf(240.dp, width * 2 / 5))
-                    .aspectRatio(2 / 3f),
+                Modifier.width(minOf(240.dp, width * 2 / 5)).aspectRatio(2 / 3f),
                 springStiffness = Spring.StiffnessHigh,
             )
         }

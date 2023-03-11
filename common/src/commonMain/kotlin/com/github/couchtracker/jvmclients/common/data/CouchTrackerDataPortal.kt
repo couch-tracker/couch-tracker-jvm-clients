@@ -38,6 +38,7 @@ class CouchTrackerDataPortals(
         showId: String,
         locales: List<Locale> = listOf(Locale.ENGLISH),
     ): Flow<CachedValue<ShowBasicInfo>> {
+        // TODO: better exception
         return active?.show(showId, locales) ?: MutableStateFlow(CachedValue.Error(RuntimeException(), Clock.System.now()))
     }
 

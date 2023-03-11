@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package com.github.couchtracker.jvmclients.common.data
 
 import com.github.couchtracker.jvmclients.common.utils.elapsedTime
@@ -27,6 +25,18 @@ sealed class CachedValue<out T> {
     data class Loaded<T>(val data: T, val downloadTime: Instant) : CachedValue<T>() {
         val expireDate = downloadTime.plus(1.days)
         val isUpToDate = Clock.System.now().minus(1.days) < expireDate
+    }
+}
+
+fun <T> Array<CachedValue<T>>.combine(): CachedValue<List<T>> {
+    val bad = firstOrNull { it is CachedValue.NotLoaded }
+    return when {
+        bad != null -> bad as CachedValue.NotLoaded
+        isEmpty() -> CachedValue.Loaded(emptyList(), Clock.System.now())
+        else -> CachedValue.Loaded<List<T>>(
+            map { (it as CachedValue.Loaded).data },
+            minOf { (it as CachedValue.Loaded).downloadTime },
+        )
     }
 }
 
