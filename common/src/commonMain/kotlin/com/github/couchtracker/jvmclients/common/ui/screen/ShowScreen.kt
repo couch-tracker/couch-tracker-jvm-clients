@@ -68,15 +68,14 @@ private fun ShowHeader(
     width: Dp,
 ) {
     Row(Modifier) {
-        if (show.posterClean != null) {
+        if (show.posterPreferClean != null) {
             val painter = rememberAsyncImagePainter(
-                show.posterClean.url,
+                show.posterPreferClean.url,
                 contentScale = ContentScale.Crop,
             )
             FadeInImage(
                 painter,
                 Modifier.width(minOf(240.dp, width * 2 / 5)).aspectRatio(2 / 3f),
-                springStiffness = Spring.StiffnessHigh,
             )
         }
         Column {
@@ -107,12 +106,16 @@ data class ShowLocation(val id: String) : Location.Authenticated() {
         val show by dataPortal.show(id).collectAsState(CachedValue.Loading)
         when (val s = show) {
             is CachedValue.Loaded -> {
-                if (s.data.backdropClean != null) {
+                if (s.data.backdropPreferClean != null) {
                     val painter = rememberAsyncImagePainter(
-                        s.data.backdropClean.url,
+                        s.data.backdropPreferClean.url,
                         contentScale = ContentScale.Crop,
                     )
-                    FadeInImage(painter, Modifier.fillMaxSize().alpha(0.4f))
+                    FadeInImage(
+                        painter,
+                        Modifier.fillMaxSize().alpha(0.4f),
+                        springStiffness = Spring.StiffnessLow,
+                    )
                 }
             }
 

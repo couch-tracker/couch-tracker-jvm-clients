@@ -170,7 +170,7 @@ class CouchTrackerDataPortal(
 
     fun show(
         showId: String,
-        locales: List<Locale> = listOf(Locale.ENGLISH),
+        locales: List<Locale> = listOf(Locale.ENGLISH, Locale.ITALY, Locale.ITALIAN),
     ): Flow<CachedValue<ShowBasicInfo>> {
         return showBasicInfoCache.get(LocalizedKey(locales, showId))
     }

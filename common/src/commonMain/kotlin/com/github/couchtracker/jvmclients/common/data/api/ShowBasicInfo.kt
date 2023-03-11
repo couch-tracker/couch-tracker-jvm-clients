@@ -10,4 +10,7 @@ data class ShowBasicInfo(
     val posterClean: Image?,
     val backdrop: Image?,
     val backdropClean: Image?,
-)
+) {
+    val posterPreferClean = posterClean ?: poster
+    val backdropPreferClean = backdropClean ?: backdrop
+}

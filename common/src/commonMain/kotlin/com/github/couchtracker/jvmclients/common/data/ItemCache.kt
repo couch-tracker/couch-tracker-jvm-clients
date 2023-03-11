@@ -244,6 +244,7 @@ private sealed class ItemCacheState<T>(val info: ItemCacheStateTransitionHandler
                 Saving(info, CachedValue.Loaded(ret.getOrThrow(), now))
             } else {
                 val error = DisplayableError.fromException(ret.exceptionOrNull()!!, retry, info.reauthenticate)
+                logger.debug(ret.exceptionOrNull()!!) { "Error downloading item" }
                 val newData = when (data) {
                     is CachedValue.Loaded -> data
                     else -> CachedValue.Error(error)

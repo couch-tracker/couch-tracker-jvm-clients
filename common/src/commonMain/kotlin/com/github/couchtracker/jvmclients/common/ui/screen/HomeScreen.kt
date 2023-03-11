@@ -1,5 +1,6 @@
 package com.github.couchtracker.jvmclients.common.ui.screen
 
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -16,12 +17,19 @@ import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackData
 import com.github.couchtracker.jvmclients.common.ui.component.CachedValueContainer
 import com.github.couchtracker.jvmclients.common.ui.component.FullscreenCard
+import com.github.couchtracker.jvmclients.common.ui.component.ShowRow
 import kotlinx.coroutines.flow.combine
 
 private val shows = listOf(
+    "tmdb:8592",
+    "tmdb:2316",
+    "tmdb:36189",
     "tmdb:1705",
     "tmdb:57243",
     "tmdb:60059",
+    "tmdb:1396",
+    "tmdb:100088",
+    "tmdb:1399",
 )
 
 @Composable
@@ -39,13 +47,15 @@ fun HomeScreen(
         CachedValueContainer(Modifier.fillMaxSize(), showList) { sl ->
             LazyColumn(
                 Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 items(sl) { show ->
-                    Button({ editStack(stackData.push(ShowLocation(show.id))) }) {
-                        Text(show.name)
-                    }
+                    ShowRow(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { editStack(stackData.push(ShowLocation(show.id))) },
+                        show,
+                    )
                 }
             }
         }
