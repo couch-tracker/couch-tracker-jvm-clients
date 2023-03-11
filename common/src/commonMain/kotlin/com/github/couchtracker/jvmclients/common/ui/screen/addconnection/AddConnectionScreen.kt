@@ -36,7 +36,7 @@ import com.github.couchtracker.jvmclients.common.navigation.StackNavigation
 import com.github.couchtracker.jvmclients.common.navigation.popOrNull
 import com.github.couchtracker.jvmclients.common.navigation.slideAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
-import com.github.couchtracker.jvmclients.common.ui.component.ScreenOrPopup
+import com.github.couchtracker.jvmclients.common.ui.component.ScreenCard
 import com.github.couchtracker.jvmclients.common.ui.component.TopAppBar
 import kotlinx.datetime.Clock
 
@@ -126,7 +126,7 @@ fun AddConnectionScreen(
     val goBackOrClose = editStack.popOrNull(stackData)
     var stack by remember { mutableStateOf(StackData.of<AddConnectionState>(AddConnectionState.ChooseServerState)) }
 
-    ScreenOrPopup(state, goBackOrClose) { fill, width, height ->
+    ScreenCard(state, goBackOrClose) { fill, width, height ->
         Column(if (fill) Modifier.fillMaxSize() else Modifier.width(640.dp)) {
             TopAppBar({ Text("Add connection") }, state, goBackOrClose, width, height)
             StackNavigation(

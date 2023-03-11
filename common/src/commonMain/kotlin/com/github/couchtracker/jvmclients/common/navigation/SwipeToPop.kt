@@ -28,7 +28,7 @@ fun Modifier.swipeToPop(
 }
 
 @Composable
-private fun Modifier.createSwipeable(
+fun Modifier.createSwipeable(
     canPop: Boolean,
     size: Dp,
     swipeableState: SwipeableState<Boolean>,

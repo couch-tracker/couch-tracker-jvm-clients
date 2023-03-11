@@ -4,7 +4,7 @@ package com.github.couchtracker.jvmclients.common
 
 import android.content.Context
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.cash.sqldelight.db.SqlDriver

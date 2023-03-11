@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.LocalDataPortals
 import com.github.couchtracker.jvmclients.common.Location
 import com.github.couchtracker.jvmclients.common.data.CachedValue
@@ -13,9 +14,8 @@ import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.github.couchtracker.jvmclients.common.data.combine
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
 import com.github.couchtracker.jvmclients.common.navigation.StackData
-import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 import com.github.couchtracker.jvmclients.common.ui.component.CachedValueContainer
-import com.github.couchtracker.jvmclients.common.ui.component.Screen
+import com.github.couchtracker.jvmclients.common.ui.component.FullscreenCard
 import kotlinx.coroutines.flow.combine
 
 private val shows = listOf(
@@ -35,9 +35,13 @@ fun HomeScreen(
         combine(shows.map { portals.show(it) }) { s -> s.combine() }
     }.collectAsState(CachedValue.Loading)
 
-    Screen(state) { w, h ->
-        CachedValueContainer(Modifier.fillMaxSize().swipeToPop(state, w, h), showList) { sl ->
-            LazyColumn {
+    FullscreenCard(state) { w, h ->
+        CachedValueContainer(Modifier.fillMaxSize(), showList) { sl ->
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 items(sl) { show ->
                     Button({ editStack(stackData.push(ShowLocation(show.id))) }) {
                         Text(show.name)

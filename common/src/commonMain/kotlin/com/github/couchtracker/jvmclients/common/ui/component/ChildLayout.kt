@@ -8,9 +8,11 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.hasBackButton
 import com.github.couchtracker.jvmclients.common.navigation.ItemAnimatableState
+import com.github.couchtracker.jvmclients.common.navigation.SwipeToPopNestedScrollConnection
 import com.github.couchtracker.jvmclients.common.navigation.stackAnimation
 import com.github.couchtracker.jvmclients.common.navigation.swipeToPop
 
@@ -50,18 +52,18 @@ fun TopAppBar(
 }
 
 @Composable
-fun Screen(
+fun FullscreenCard(
     state: ItemAnimatableState,
     modifier: Modifier = Modifier.fillMaxSize(),
     content: @Composable (w: Dp, h: Dp) -> Unit,
 ) {
-    ScreenOrPopup(state, { }, modifier) { _, w, h ->
+    ScreenCard(state, { }, modifier) { _, w, h ->
         content(w, h)
     }
 }
 
 @Composable
-fun ScreenOrPopup(
+fun ScreenCard(
     state: ItemAnimatableState,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
@@ -73,7 +75,7 @@ fun ScreenOrPopup(
         val h = maxHeight
         Box(modifier.stackAnimation(state, w, h), contentAlignment = Alignment.Center) {
             Scrim(!fill, onDismiss)
-            ScreenCard(fullscreen = fill) {
+            ScreenCard(Modifier, state, w, h, fill) {
                 content(fill, w, h)
             }
         }
@@ -81,13 +83,22 @@ fun ScreenOrPopup(
 }
 
 @Composable
-fun ScreenCard(
+private fun ScreenCard(
     modifier: Modifier = Modifier,
+    state: ItemAnimatableState,
+    width: Dp,
+    height: Dp,
     fullscreen: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val nestedScrollConnection = remember(state) {
+        SwipeToPopNestedScrollConnection(state)
+    }
     Surface(
-        modifier.padding(if (!fullscreen) 32.dp else 0.dp),
+        modifier
+            .padding(if (!fullscreen) 32.dp else 0.dp)
+            .swipeToPop(state, width, height, true, false)
+            .nestedScroll(connection = nestedScrollConnection),
         shape = when {
             fullscreen -> MaterialTheme.shapes.large.copy(
                 bottomStart = CornerSize(0.dp),
