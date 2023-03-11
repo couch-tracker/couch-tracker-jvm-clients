@@ -15,10 +15,11 @@ fun FadeInImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = null,
+    springStiffness: Float = Spring.StiffnessLow,
 ) {
     val alpha by animateFloatAsState(
         if (painter.requestState is ImageRequestState.Success) 1f else 0f,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = spring(stiffness = springStiffness),
     )
     Image(
         painter,

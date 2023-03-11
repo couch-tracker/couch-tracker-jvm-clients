@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 data class ShowBasicInfo(
     val id: String,
     val name: String,
-    val poster: Image,
-    val posterClean: Image,
-    val backdrop: Image,
-    val backdropClean: Image,
+    val poster: Image?,
+    val posterClean: Image?,
+    val backdrop: Image?,
+    val backdropClean: Image?,
 )

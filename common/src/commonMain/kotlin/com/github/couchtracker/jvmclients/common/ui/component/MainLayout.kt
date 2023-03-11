@@ -138,11 +138,13 @@ private fun MainTopAppBar(
 ) {
     TopAppBar(
         title = {
-            Row {
-                Spacer(Modifier.width(with(LocalDensity.current) { drawerRevealed.offset.value.toDp() }))
-                StackNavigationUI(stackState) { location, state ->
-                    Box(Modifier.crossFade(state, overlap = .75f)) { location.title() }
-                }
+            StackNavigationUI(
+                stackState,
+                modifier = Modifier.offset {
+                    IntOffset(drawerRevealed.offset.value.roundToInt(), 0)
+                },
+            ) { location, state ->
+                Box(Modifier.crossFade(state, overlap = .75f)) { location.title() }
             }
         },
         backgroundColor = Color.Transparent,
