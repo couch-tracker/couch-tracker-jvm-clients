@@ -28,10 +28,10 @@ fun couchTrackerHttpClient(
             defaultRequest {
                 url(server.address + "/api/")
             }
-            //install(Logging){
-            //    level = LogLevel.INFO
-            //}
-            install(ContentEncoding){
+            // install(Logging){
+            //     level = LogLevel.INFO
+            // }
+            install(ContentEncoding) {
                 deflate(1.0F)
                 gzip(0.9F)
             }

@@ -55,7 +55,7 @@ private fun LoadedContent(
 ) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            ShowHeader(show, state, width, height)
+            ShowHeader(show, width)
         }
         items(100) {
             ListItem { Text("Item #$it") }
@@ -66,11 +66,9 @@ private fun LoadedContent(
 @Composable
 private fun ShowHeader(
     show: ShowBasicInfo,
-    state: ItemAnimatableState,
     width: Dp,
-    height: Dp,
 ) {
-    Row(Modifier/*.swipeToPop(state, width, height)*/) {
+    Row(Modifier) {
         if (show.posterClean != null) {
             val painter = rememberAsyncImagePainter(
                 show.posterClean.url,

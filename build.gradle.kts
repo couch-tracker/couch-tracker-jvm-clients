@@ -56,4 +56,3 @@ tasks.withType<DependencyUpdatesTask> {
         isStable(candidate.version).not()
     }
 }
-
