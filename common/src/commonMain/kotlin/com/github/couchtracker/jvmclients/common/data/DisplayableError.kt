@@ -29,7 +29,7 @@ data class DisplayableError(
                 is ClientRequestException -> when (t.response.status) {
                     HttpStatusCode.Unauthorized -> {
                         retryAction = null
-                        resolveAction = ErrorAction.Resolve("Login", resolveAuthentication)
+                        resolveAction = ErrorAction.Resolve("Re-authenticate", resolveAuthentication)
                         "Authentication error"
                     }
 

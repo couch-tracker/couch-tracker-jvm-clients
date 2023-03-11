@@ -18,6 +18,7 @@ import io.ktor.client.request.parameter
 import mu.KotlinLogging
 import java.util.Locale
 import java.util.Optional
+import java.util.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,7 +46,13 @@ class CouchTrackerDataPortals(
                 .mapToList(Dispatchers.Main)
                 .runningFold(null) { previous: Map<CouchTrackerConnection, CouchTrackerDataPortal>?, connections ->
                     connections.associateWith {
-                        previous?.get(it) ?: CouchTrackerDataPortal(scope, it, database) { reauthenticate(it) }
+                        val old = previous?.get(it)
+                        if (old != null) {
+                            old.retryAuthErrors()
+                            old
+                        } else {
+                            CouchTrackerDataPortal(scope, it, database) { reauthenticate(it) }
+                        }
                     }
                 }
                 .mapLatest {
@@ -113,6 +120,11 @@ class CouchTrackerDataPortal(
             }
     }
 
+    fun retryAuthErrors() {
+        userCache.retryAuthErrors()
+        showBasicInfoCache.retryAuthErrors()
+    }
+
     private val userCache = ItemsCache.persistent<String, User>(
         scope = scope,
         load = { userId ->
@@ -147,7 +159,7 @@ class CouchTrackerDataPortal(
         scope = scope,
         download = { (locales, showId) ->
             runCatching {
-                // if (Random.nextFloat() < 0.8f) throw RuntimeException()
+                // if (kotlin.random.Random.nextFloat() < 0.8f) throw RuntimeException()
                 client.get("shows/$showId") {
                     locales.forEach { parameter("locales", it.language) }
                 }.body()

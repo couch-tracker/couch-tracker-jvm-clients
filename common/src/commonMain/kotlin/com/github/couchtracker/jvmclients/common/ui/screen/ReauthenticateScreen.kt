@@ -49,7 +49,6 @@ fun ReauthenticateScreen(
                 server = connection.server,
                 forcedLogin = login,
                 onLogin = { _, authenticationInfo ->
-                    // TODO: retry downloads
                     authenticationInfo.save(connection, database)
                     goBackOrClose()
                 },

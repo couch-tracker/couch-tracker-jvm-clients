@@ -74,6 +74,12 @@ class ItemsCache<K, T> private constructor(
         return ItemCache(key)
     }
 
+    fun retryAuthErrors() {
+        cache.values.forEach {
+            it.retry()
+        }
+    }
+
     private inner class ItemCache(val key: K) {
         val info = ItemCacheStateTransitionHandler(
             reauthenticate,
