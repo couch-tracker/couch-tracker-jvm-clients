@@ -185,10 +185,7 @@ private fun MainDrawer(
             },
     ) {
         items(portals.portals) { portal ->
-            val user: CachedValue<User> by remember {
-                // TODO it should be the portal that remembers
-                portal.user(portal.connection.userId)
-            }.collectAsState(CachedValue.Loading)
+            val user by portal.user(portal.connection.userId).collectAsState(CachedValue.Loading)
             ListItem(
                 modifier = Modifier.clickable { manageConnection(portal.connection) },
                 icon = { Icon(Icons.Default.AccountCircle, null) },

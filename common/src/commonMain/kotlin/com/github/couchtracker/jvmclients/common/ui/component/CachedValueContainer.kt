@@ -23,7 +23,6 @@ fun <T> CachedValueContainer(modifier: Modifier, data: CachedValue<T>, f: @Compo
 fun NotLoadedContent(modifier: Modifier, data: CachedValue.NotLoaded) {
     when (data) {
         is CachedValue.Error -> {
-            // TODO: improve
             Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.weight(1f))
 
