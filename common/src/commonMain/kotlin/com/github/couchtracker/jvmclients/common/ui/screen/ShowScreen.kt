@@ -41,7 +41,7 @@ fun ShowScreen(
                 dataPortal.show(id)
             }.collectAsState(CachedValue.Loading)
             CachedValueContainer(Modifier.fillMaxSize(), show) { s ->
-                LoadedContent(s, w, h)
+                LoadedContent(s, w)
             }
         }
     }
@@ -51,11 +51,10 @@ fun ShowScreen(
 private fun LoadedContent(
     show: ShowBasicInfo,
     width: Dp,
-    height: Dp,
 ) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            ShowHeader(show, width, height)
+            ShowHeader(show, width)
         }
         items(100) {
             ListItem { Text("Item #$it") }
@@ -67,17 +66,18 @@ private fun LoadedContent(
 private fun ShowHeader(
     show: ShowBasicInfo,
     width: Dp,
-    height: Dp,
 ) {
+    val posterWidth = minOf(240.dp, width * 2 / 5)
+    val posterHeight = posterWidth * 3 / 2
     Row(Modifier) {
         if (show.posterPreferClean != null) {
             val painter = rememberAsyncImagePainter(
-                show.posterPreferClean.sourceFor(width, height).url,
+                show.posterPreferClean.sourceFor(posterWidth, posterHeight).url,
                 contentScale = ContentScale.Crop,
             )
             FadeInImage(
                 painter,
-                Modifier.width(minOf(240.dp, width * 2 / 5)).aspectRatio(2 / 3f),
+                Modifier.width(posterWidth).height(posterHeight),
             )
         }
         Column {
