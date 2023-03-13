@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalAnimationApi::class)
+
 package com.github.couchtracker.jvmclients.common.ui.component
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -11,7 +14,11 @@ import com.github.couchtracker.jvmclients.common.data.CachedValue
 
 @Composable
 fun <T> CachedValueContainer(modifier: Modifier, data: CachedValue<T>, f: @Composable (T) -> Unit) {
-    Crossfade(data, modifier) {
+    val transition = updateTransition(data)
+    transition.Crossfade(
+        modifier,
+        contentKey = { it::class },
+    ) {
         when (it) {
             is CachedValue.Loaded -> f(it.data)
             is CachedValue.NotLoaded -> NotLoadedContent(modifier, it)

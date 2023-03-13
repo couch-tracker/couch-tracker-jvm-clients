@@ -92,9 +92,7 @@ class ItemsCache<K, T> private constructor(
             var state: ItemCacheState<T> = initialState
             emit(state.data)
             while (true) {
-                state = state.next {
-                    retry()
-                }
+                state = state.next(::retry)
                 emit(state.data)
             }
         }
@@ -104,7 +102,7 @@ class ItemsCache<K, T> private constructor(
         fun retry(force: Boolean = false) {
             val last = flow.replayCache.lastOrNull()
             if (last is CachedValue.Error) {
-                startState.value = ItemCacheState.Refreshing(info, last)
+                startState.value = ItemCacheState.Refreshing(info, CachedValue.Loading)
             } else if (last == null || force) {
                 startState.value = ItemCacheState.Unknown(info)
             }
