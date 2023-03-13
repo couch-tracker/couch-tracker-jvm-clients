@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.*
 import com.github.couchtracker.jvmclients.common.data.api.ShowBasicInfo
 import com.seiko.imageloader.rememberAsyncImagePainter
@@ -16,13 +17,14 @@ fun ShowRow(
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (show.posterPreferClean != null) {
+            val width = 56.dp
             val painter = rememberAsyncImagePainter(
-                show.posterPreferClean.url,
+                show.posterPreferClean.sourceFor(width = width).url,
                 contentScale = ContentScale.Crop,
             )
             FadeInImage(
                 painter,
-                Modifier.width(56.dp).aspectRatio(2 / 3f),
+                Modifier.width(width).aspectRatio(2 / 3f),
             )
         }
         Text(show.name, Modifier.padding(16.dp), style = MaterialTheme.typography.body1)

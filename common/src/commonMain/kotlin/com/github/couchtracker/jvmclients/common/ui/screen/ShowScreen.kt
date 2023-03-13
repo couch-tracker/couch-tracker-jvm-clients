@@ -41,7 +41,7 @@ fun ShowScreen(
                 dataPortal.show(id)
             }.collectAsState(CachedValue.Loading)
             CachedValueContainer(Modifier.fillMaxSize(), show) { s ->
-                LoadedContent(s, w)
+                LoadedContent(s, w, h)
             }
         }
     }
@@ -51,10 +51,11 @@ fun ShowScreen(
 private fun LoadedContent(
     show: ShowBasicInfo,
     width: Dp,
+    height: Dp,
 ) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            ShowHeader(show, width)
+            ShowHeader(show, width, height)
         }
         items(100) {
             ListItem { Text("Item #$it") }
@@ -66,11 +67,12 @@ private fun LoadedContent(
 private fun ShowHeader(
     show: ShowBasicInfo,
     width: Dp,
+    height: Dp,
 ) {
     Row(Modifier) {
         if (show.posterPreferClean != null) {
             val painter = rememberAsyncImagePainter(
-                show.posterPreferClean.url,
+                show.posterPreferClean.sourceFor(width, height).url,
                 contentScale = ContentScale.Crop,
             )
             FadeInImage(
@@ -107,15 +109,17 @@ data class ShowLocation(val id: String) : Location.Authenticated() {
         when (val s = show) {
             is CachedValue.Loaded -> {
                 if (s.data.backdropPreferClean != null) {
-                    val painter = rememberAsyncImagePainter(
-                        s.data.backdropPreferClean.url,
-                        contentScale = ContentScale.Crop,
-                    )
-                    FadeInImage(
-                        painter,
-                        Modifier.fillMaxSize().alpha(0.4f),
-                        springStiffness = Spring.StiffnessLow,
-                    )
+                    BoxWithConstraints {
+                        val painter = rememberAsyncImagePainter(
+                            s.data.backdropPreferClean.sourceFor(maxWidth, maxHeight).url,
+                            contentScale = ContentScale.Crop,
+                        )
+                        FadeInImage(
+                            painter,
+                            Modifier.fillMaxSize().alpha(0.4f),
+                            springStiffness = Spring.StiffnessLow,
+                        )
+                    }
                 }
             }
 
